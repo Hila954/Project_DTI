@@ -1,0 +1,120 @@
+{
+    "model_suffix": "l2r_4dct_costunrolling__cyc",
+    "dump_disp": false,
+    "after_epoch": 0,
+    "print_freq": 1,
+    "plot_freq": 1,
+    "record_freq": 1,
+    "save_iter": 50,
+    "batch_size": 1,
+    "aug_shape": [192, 192, 128],
+    "test_shape": [192, 192, 192],
+    "orig_shape":[192,192,208],
+    "num_workers": 4,
+    "test_batch_size": 1000,
+    "epochs": 250,
+    "epoch_size": 100,
+    "levels": [
+        200
+    ],
+    "lr": 0.0001,
+    "gamma": 0.7,
+    "relu": 0.1,
+    "frame_dif": 5,
+    "no_cuda": false,
+    "dry_run": false,
+    "valid_interval": 1,
+    "save_interval": 1,
+    "save_model": false,
+    "data_path": "./datasets/L2R2021/task_02",
+    "sp_filepth_train": "./datasets/L2R2021/task_02/test_pairs_val.csv",
+    "sp_filepth_valid": "./datasets/L2R2021/task_02/test_pairs_val.csv",
+    "valid_path": "./datasets/L2R2021/task_02",
+    "valid_type": "l2r_valid",
+    "train_type": "l2r_train",
+    "checkpoint_path": "/mnt/storage/datasets/4DCT/checkpoints",
+    "pretrained_model": "./models/dir",
+    "n_gpu": 2,
+    "alpha": 10,
+    "w_bk": true,
+    "w_ternary": 1,
+    "w_l1": 1,
+    "w_ssim": 1,
+    "warp_pad": "border",
+    "mwl_apply_gaussian": true,
+    "mwl_gaus_kernel": 3,
+    "mwl_gaus_sigma": 1,
+    "mwl_use_occ_masks": true,
+    "mwl_w_scales" : [
+        50.0,
+        50.0,
+        50.0,
+        50.0,
+        50.0
+    ],
+    "cyc_w_scales" : [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ],
+
+    "w_scales": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0
+    ],
+    "w_sm_scales": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ],
+    "w_ncc_scales": [
+        [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ]
+    ],
+    "loss": "ncc+cyc",
+    "ncc_win": [
+        7
+    ],
+    "smooth_flow_only": true,
+    "variance_valid_len": 10,
+    "variance_valid_short_len": 5,
+    "variance_valid_sets": 15,
+    "w_occ": true,
+    "comment": "ADMM + occu",
+    "w_admm": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ],
+    "admm_rho": 0.1,
+    "admm_args": {
+        "rho": 0.1,
+        "lamb": 0.1,
+        "eta": 1,
+        "T": 1,
+        "alpha": 50,
+        "grad": "1st",
+        "learn_mask": false,
+        "apply_admm": [
+            0,
+            0,
+            0,
+            0,
+            1
+        ]
+    }
+}
