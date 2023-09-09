@@ -20,7 +20,7 @@ class TrainFramework(BaseTrainer):
         am_batch_time = AverageMeter()
         am_data_time = AverageMeter()
 
-        key_meter_names = ['Loss', 'l_ph', 'l_sm', "l_admm", "flow_mean"]
+        key_meter_names = ['Loss', 'l_ph', 'l_sm', "l_admm", "flow_mean", "flow_median"]
         key_meters = AverageMeter(i=len(key_meter_names),names=key_meter_names, precision=6)
 
         # self._validate()
@@ -86,7 +86,7 @@ class TrainFramework(BaseTrainer):
                     l_kpts = 0.0
 
             # update meters
-            meters = [loss, l_ph, l_sm, l_admm, flow_mean]
+            meters = [loss, l_ph, l_sm, l_admm, flow_mean, torch.median(torch.abs(flows12[0]))]
             vals = [m.item() if torch.is_tensor(m) else m for m in meters]
             key_meters.update(vals, img1.size(0))
             
@@ -114,7 +114,7 @@ class TrainFramework(BaseTrainer):
                        ' Time {} Data {}'.format(am_batch_time, am_data_time) + \
                        ' Info {}'.format(key_meters) + \
                        ' max flow {}'.format(torch.max(torch.abs(flows12[0]))) + \
-                       ' min flow {}'.format(torch.min(torch.abs(flows12[0])))
+                       ' min flow {}'.format(torch.min(torch.abs(flows12[0]))) 
                 self._log.info(istr)
 
             
