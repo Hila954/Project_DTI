@@ -22,8 +22,8 @@ def norm_grid(v_grid):
     # scale grid to [-1,1]
     v_grid_norm = torch.zeros_like(v_grid)
     v_grid_norm[:, 0, :, :] = 2.0 * v_grid[:, 0, :, :] / (D - 1) - 1.0
-    v_grid_norm[:, 1, :, :] = 2.0 * v_grid[:, 1, :, :] / (W - 1) - 1.0
-    v_grid_norm[:, 2, :, :] = 2.0 * v_grid[:, 2, :, :] / (H - 1) - 1.0
+    v_grid_norm[:, 1, :, :] = 2.0 * v_grid[:, 1, :, :] / (H - 1) - 1.0
+    v_grid_norm[:, 2, :, :] = 2.0 * v_grid[:, 2, :, :] / (W - 1) - 1.0
     return v_grid_norm.permute(0, 2, 3, 4, 1)
 
 def norm_lms(lms,flow_shape):

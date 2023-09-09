@@ -20,7 +20,7 @@ class TrainFramework(BaseTrainer):
         am_batch_time = AverageMeter()
         am_data_time = AverageMeter()
 
-        key_meter_names = ['Loss', 'l_ph', 'l_sm', "l_admm", "flow_mean", "flow_median"]
+        key_meter_names = ['Loss', 'l_ph', 'l_sm', "l_admm", "flow_mean", "flow_median", "remaining_voxels_percent"]
         key_meters = AverageMeter(i=len(key_meter_names),names=key_meter_names, precision=6)
 
         # self._validate()
@@ -58,7 +58,9 @@ class TrainFramework(BaseTrainer):
             aux = (aux12, aux21)
 
             loss, l_ph, l_sm, l_admm, flow_mean, occ_masks = self.loss_modules['loss_module'](flows, img1, img2, aux, vox_dim)
-
+            remaining_voxels = (occ_masks[0][0] != 0).sum()
+            occ_voxels = (occ_masks[0][0] == 0).sum()
+            remaining_voxels_percent = remaining_voxels / (remaining_voxels + occ_voxels)
             # compute loss terms
             for loss_, module_ in self.loss_modules.items():
                 
@@ -86,7 +88,7 @@ class TrainFramework(BaseTrainer):
                     l_kpts = 0.0
 
             # update meters
-            meters = [loss, l_ph, l_sm, l_admm, flow_mean, torch.median(torch.abs(flows12[0]))]
+            meters = [loss, l_ph, l_sm, l_admm, flow_mean, torch.median(torch.abs(flows12[0])), remaining_voxels_percent]
             vals = [m.item() if torch.is_tensor(m) else m for m in meters]
             key_meters.update(vals, img1.size(0))
             

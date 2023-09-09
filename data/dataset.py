@@ -255,16 +255,16 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
     
     def _load_sample(self, s):
         #! CHANGE TO GENERAL ACCESS 
-        img1_mat_env = scipy.io.loadmat(s['imgs'][0])
-        img1 = img1_mat_env['DT_6C']
-        img1[np.isnan(img1)] = 0
-        #! padding like CT
-        img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
-        #img1 = img1[:2,:,:,:]
-        img2_mat_env = scipy.io.loadmat(s['imgs'][1])
-        img2 = img2_mat_env['shifted_padded_DT_6C']
+        img2_mat_env = scipy.io.loadmat(s['imgs'][0])
+        img2 = img2_mat_env['DT_6C']
         img2[np.isnan(img2)] = 0
-        img2 = np.pad(img2, [(0, 0), (32, 32), (48, 48), (0, 64)], mode='constant', constant_values=0)
+        #! padding like CT
+        img2 = np.pad(img2, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
+        #img1 = img1[:2,:,:,:]
+        img1_mat_env = scipy.io.loadmat(s['imgs'][1])
+        img1 = img1_mat_env['shifted_padded_DT_6C']
+        img1[np.isnan(img1)] = 0
+        img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 64)], mode='constant', constant_values=0)
         #img2 = img2[:2,:,:,:]
         images  = [(img1,(0.4, 0.4, 0.4)), (img2,(0.4, 0.4, 0.4))]
         target = {'case' : s['case']}

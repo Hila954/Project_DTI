@@ -1,32 +1,28 @@
 {
-    "model_suffix": "model_DTI_First_try",
-    "dump_disp": false,
-    "after_epoch": 0,
-    "DTI": true,
-    "print_freq": 1,
-    "plot_freq": 10,
-    "record_freq": 1,
-    "save_iter": 50,
+    "model_suffix": "model_DTI_yariv",
     "batch_size": 1,
-
+    "DTI": true,
+    "num_workers": 1,
+    "epochs": 7500,
+    "epoch_size": 100,
+    "after_epoch":0,
+    "levels": [5000,5000,5000],
     "aug_shape": [128, 128, 128],
     "test_shape": [192, 192, 128],
     "orig_shape":[192, 192, 128],
-    "num_workers": 4,
-    "test_batch_size": 1,
-    "epochs": 250,
-    "epoch_size": 100,
-    "levels": [
-        2000
-    ],
     "lr": 0.0001,
     "gamma": 0.7,
     "relu": 0.1,
-    "frame_dif": 5,
+    "frame_dif": 10,
+    "print_freq": 1,
+    "plot_freq": 10,
+    "record_freq": 1,
     "no_cuda": false,
     "dry_run": false,
-    "valid_interval": 20,
-    "save_interval": 20,
+    "log_interval": 1,
+    "valid_interval": 50,
+    "save_interval": 50,
+    "save_iter": 100,
     "save_model": true,
     "data_path": "./datasets/DTI2023",
     "sp_filepth_train": "./datasets/DTI2023/train_pairs_val.csv",
@@ -37,64 +33,24 @@
     "checkpoint_path": "/mnt/storage/datasets/4DCT/checkpoints",
     "pretrained_model": "./models/dir",
     "n_gpu": 2,
+    "cuda_devices":"3",
     "alpha": 10,
     "w_bk": true,
     "w_ternary": 1,
     "w_l1": 1,
     "w_ssim": 1,
     "warp_pad": "border",
-    "mwl_apply_gaussian": true,
-    "mwl_gaus_kernel": 3,
-    "mwl_gaus_sigma": 1,
-    "mwl_use_occ_masks": true,
-    "mwl_w_scales" : [
-        50.0,
-        50.0,
-        50.0,
-        50.0,
-        50.0
-    ],
-    "cyc_w_scales" : [
-        0.05,
-        0.05,
-        0.05,
-        0.05,
-        0.0
-    ],
-
-    "w_scales": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        0.0
-    ],
-    "w_sm_scales": [
-        20.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-    ],
-    "w_ncc_scales": [
-        [
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0
-        ]
-    ],
+    "w_scales": [1.0, 1.0, 1.0, 1.0, 0.0],
+    "w_sm_scales": [20.0, 0.0, 0.0, 0.0, 0.0],
+    "w_ncc_scales": [[1.0, 1.0, 1.0, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0]],
     "loss": "ncc",
-    "ncc_win": [
-        7
-    ],
-    "smooth_flow_only": true,
+    "ncc_win" : [3,5,7],
+    "smooth_flow_only": false,
     "variance_valid_len": 10,
     "variance_valid_short_len": 5,
     "variance_valid_sets": 15,
+    "comment": "overfit_fdif10->10>10",
     "w_occ": true,
-    "comment": "ADMM + occu",
     "w_admm": [
         0.0,
         0.0,
@@ -120,5 +76,3 @@
         ]
     }
 }
-
-
