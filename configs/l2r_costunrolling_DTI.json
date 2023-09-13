@@ -9,7 +9,7 @@
     "save_iter": 50,
     "batch_size": 1,
 
-    "aug_shape": [128, 128, 128],
+    "aug_shape": [192, 192, 128],
     "test_shape": [192, 192, 128],
     "orig_shape":[192, 192, 128],
     "num_workers": 4,
@@ -38,7 +38,7 @@
     "pretrained_model": "./models/dir",
     "n_gpu": 2,
     "alpha": 10,
-    "w_bk": true,
+    "w_bk": false,
     "w_ternary": 1,
     "w_l1": 1,
     "w_ssim": 1,
@@ -70,20 +70,18 @@
         0.0
     ],
     "w_sm_scales": [
-        20.0,
+        0.0,
         0.0,
         0.0,
         0.0,
         0.0
     ],
     "w_ncc_scales": [
-        [
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0
-        ]
+        [1.0,
+        1.0,
+        1.0, 
+        1.0, 
+        1.0]
     ],
     "loss": "ncc",
     "ncc_win": [
@@ -94,7 +92,7 @@
     "variance_valid_short_len": 5,
     "variance_valid_sets": 15,
     "w_occ": true,
-    "comment": "ADMM + occu",
+    "comment": "ncc per channel, no occ mask, 5pixels shift",
     "w_admm": [
         0.0,
         0.0,
