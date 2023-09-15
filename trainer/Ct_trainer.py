@@ -565,32 +565,33 @@ class TrainFramework(BaseTrainer):
             flows = self.model(img1, img2, vox_dim=vox_dim, w_bk=False)['flows_fw'][0][0]
             pred_flows = flows.detach().squeeze(0)
             spacing = vox_dim.detach()
-            #! Please selected the channel (out of 6) of the DTI you want to visualize 
-            selected_DTI_channel = 0
-            if i_step % self.args.plot_freq == 0:
-                
-                # warped imgs
-                img1_recons = flow_warp(img2[0].unsqueeze(0), pred_flows.unsqueeze(0))
-                p_warped = disp_warped_img(img1[0][selected_DTI_channel].detach().cpu(),
-                                             img1_recons[0][selected_DTI_channel].detach().cpu())
-                #self.summary_writer.add_figure('Warped_{}'.format(i_step), p_warped, self.i_epoch)
-                self.summary_writer.add_images('Warped_{}'.format(i_step), p_warped, self.i_epoch, dataformats='NHWC')
-                # imgs and flow                
-                p_valid, simple_flow_view = disp_training_fig(img1[0][selected_DTI_channel].detach().cpu(), img2[0][selected_DTI_channel].detach().cpu(), pred_flows.cpu())
-                self.summary_writer.add_images('Sample_{}'.format(i_step), p_valid, self.i_epoch, dataformats='NCHW')
-                self.summary_writer.add_figure('simple_flow_{}'.format(i_step), simple_flow_view, self.i_epoch)
+            #!  visualize all channels
+            for selected_DTI_channel in range(img1.shape[1]):
 
-                p_valid = plot_images(img1[0][selected_DTI_channel].detach().cpu(), img1_recons[0][selected_DTI_channel].detach().cpu(),
-                                     img2[0][selected_DTI_channel].detach().cpu(), show=False)
-                self.summary_writer.add_figure('Training_Images_warping_difference', p_valid, self.i_epoch)
-                #diff_warp = torch.zeros([2, 192, 192, 64], device=self.device)
-                #diff_warp[0] = img1[0]
-                #diff_warp[1] = img1_recons[0]
-                #diff_variance = torch.std(diff_warp, dim=0)
-                #diff_error = float(diff_variance.median().item())
-                #self.writer.add_scalar('Training error', diff_error,
-                #                       self.i_iter)
-                
+                if i_step % self.args.plot_freq == 0:
+                    
+                    # warped imgs
+                    img1_recons = flow_warp(img2[0].unsqueeze(0), pred_flows.unsqueeze(0))
+                    p_warped = disp_warped_img(img1[0][selected_DTI_channel].detach().cpu(),
+                                                img1_recons[0][selected_DTI_channel].detach().cpu())
+                    #self.summary_writer.add_figure('Warped_{}'.format(i_step), p_warped, self.i_epoch)
+                    self.summary_writer.add_images('Warped_ch_{}_{}'.format(selected_DTI_channel, i_step), p_warped, self.i_epoch, dataformats='NHWC')
+                    # imgs and flow                
+                    p_valid, simple_flow_view = disp_training_fig(img1[0][selected_DTI_channel].detach().cpu(), img2[0][selected_DTI_channel].detach().cpu(), pred_flows.cpu())
+                    self.summary_writer.add_images('Sample_ch_{}_{}'.format(selected_DTI_channel, i_step), p_valid, self.i_epoch, dataformats='NCHW')
+                    self.summary_writer.add_figure('simple_flow_ch_{}_{}'.format(selected_DTI_channel ,i_step), simple_flow_view, self.i_epoch)
+
+                    p_valid = plot_images(img1[0][selected_DTI_channel].detach().cpu(), img1_recons[0][selected_DTI_channel].detach().cpu(),
+                                        img2[0][selected_DTI_channel].detach().cpu(), show=False)
+                    self.summary_writer.add_figure(f'Training_Images_warping_difference_{selected_DTI_channel}', p_valid, self.i_epoch)
+                    #diff_warp = torch.zeros([2, 192, 192, 64], device=self.device)
+                    #diff_warp[0] = img1[0]
+                    #diff_warp[1] = img1_recons[0]
+                    #diff_variance = torch.std(diff_warp, dim=0)
+                    #diff_error = float(diff_variance.median().item())
+                    #self.writer.add_scalar('Training error', diff_error,
+                    #                       self.i_iter)
+                    
 
             end = time.time()
 

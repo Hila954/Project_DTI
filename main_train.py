@@ -46,10 +46,10 @@ if __name__ == '__main__':
             'valid_interval': 1,
             'log_interval': 1
         })
-    if args.test or args.docker:        
-        cfg.update({
-            'dump_disp': True,
-        })
+    # if args.test or args.docker:        
+    #     cfg.update({
+    #         'dump_disp': True,
+    #     })
 
     # store files day by day
     curr_time = datetime.datetime.now().strftime("%y%m%d%H%M%S")
