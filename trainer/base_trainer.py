@@ -195,12 +195,12 @@ class BaseTrainer:
                 models = {'epoch': self.i_epoch, 'state_dict': self.model.module.state_dict()}
             except:
                 models = {'epoch': self.i_epoch, 'state_dict': self.model.state_dict()}
-            
+            self._log.info("saved model")
             save_checkpoint(self.save_root, models, name, is_best)
     
     def setup(self, rank, world_size):
         os.environ['MASTER_ADDR'] = 'localhost'
-        os.environ['MASTER_PORT'] = '12355'
+        os.environ['MASTER_PORT'] = '12356'
 
         # initialize the process group 
         #! GPUUUUUUU 

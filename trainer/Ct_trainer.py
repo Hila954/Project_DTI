@@ -565,6 +565,16 @@ class TrainFramework(BaseTrainer):
             flows = self.model(img1, img2, vox_dim=vox_dim, w_bk=False)['flows_fw'][0][0]
             pred_flows = flows.detach().squeeze(0)
             spacing = vox_dim.detach()
+
+
+            GT_for_20pixel_shift = torch.zeros_like(pred_flows)
+            GT_for_20pixel_shift[2,  self.valid_loader.dataset.none_zero_indexes] = -20
+        
+            #! MSE
+            MSE = torch.mean((pred_flows - GT_for_20pixel_shift) ** 2) 
+            self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
+
+
             #!  visualize all channels
             for selected_DTI_channel in range(img1.shape[1]):
 
@@ -579,7 +589,6 @@ class TrainFramework(BaseTrainer):
                     # imgs and flow                
                     p_valid, simple_flow_view = disp_training_fig(img1[0][selected_DTI_channel].detach().cpu(), img2[0][selected_DTI_channel].detach().cpu(), pred_flows.cpu())
                     self.summary_writer.add_images('Sample_ch_{}_{}'.format(selected_DTI_channel, i_step), p_valid, self.i_epoch, dataformats='NCHW')
-                    self.summary_writer.add_figure('simple_flow_ch_{}_{}'.format(selected_DTI_channel ,i_step), simple_flow_view, self.i_epoch)
 
                     p_valid = plot_images(img1[0][selected_DTI_channel].detach().cpu(), img1_recons[0][selected_DTI_channel].detach().cpu(),
                                         img2[0][selected_DTI_channel].detach().cpu(), show=False)
@@ -592,6 +601,7 @@ class TrainFramework(BaseTrainer):
                     #self.writer.add_scalar('Training error', diff_error,
                     #                       self.i_iter)
                     
+            self.summary_writer.add_figure('simple_flow_{}_middle_slice'.format(i_step), simple_flow_view, self.i_epoch)
 
             end = time.time()
 

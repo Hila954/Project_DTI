@@ -217,6 +217,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         self.root = pathlib.Path(root)
         self.data_Hyrax_name = 'padded_DTI_Hyrax_data.mat'
         self.data_Dog_name = 'shifted_padded_DTI_Dog_data.mat'
+        self.none_zero_indexes = 0
 
         #######################################################################! HERE 
         self.samples = self.collect_samples()
@@ -260,6 +261,9 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         img1[np.isnan(img1)] = 0
         #! padding like CT
         img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
+        #finding where the values are not 0 in the image, regardless of the channel location for future use
+        img_max = np.max(img1, axis=0)
+        self.none_zero_indexes = img_max != 0
         #img1 = img1[:2,:,:,:]
         img2_mat_env = scipy.io.loadmat(s['imgs'][1])
         img2 = img2_mat_env['shifted_padded_DT_6C']

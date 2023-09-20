@@ -33,7 +33,7 @@ def load_checkpoint(model_path):
 
 def save_checkpoint(save_path, states, file_prefixes, is_best, filename='ckpt.pth.tar'):
     def run_one_sample(save_path, state, prefix, is_best, filename):
-        print('saved model')
+        #print('saved model')
         torch.save(state, save_path / '{}_{}'.format(prefix, filename))
         if is_best:
             shutil.copyfile(save_path / '{}_{}'.format(prefix, filename),

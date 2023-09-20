@@ -6,7 +6,7 @@
     "print_freq": 1,
     "plot_freq": 10,
     "record_freq": 1,
-    "save_iter": 50,
+    "save_iter": 100,
     "batch_size": 1,
 
     "aug_shape": [192, 192, 128],
@@ -17,7 +17,7 @@
     "epochs": 250,
     "epoch_size": 100,
     "levels": [
-        2000
+        1500
     ],
     "lr": 0.0001,
     "gamma": 0.7,
@@ -25,8 +25,8 @@
     "frame_dif": 5,
     "no_cuda": false,
     "dry_run": false,
-    "valid_interval": 50,
-    "save_interval": 50,
+    "valid_interval": 10,
+    "save_interval": 10,
     "save_model": true,
     "data_path": "./datasets/DTI2023",
     "sp_filepth_train": "./datasets/DTI2023/train_pairs_val.csv",
@@ -92,7 +92,7 @@
     "variance_valid_short_len": 5,
     "variance_valid_sets": 15,
     "w_occ": true,
-    "comment": "ncc per channel, no occ mask, 5pixels shift",
+    "comment": "ncc per channel, no occ mask, 20pixels shift, 1 smoothness",
     "w_admm": [
         0.0,
         0.0,
