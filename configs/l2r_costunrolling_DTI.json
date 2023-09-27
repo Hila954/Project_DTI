@@ -38,7 +38,7 @@
     "pretrained_model": "./models/dir",
     "n_gpu": 2,
     "alpha": 10,
-    "w_bk": false,
+    "w_bk": true,
     "w_ternary": 1,
     "w_l1": 1,
     "w_ssim": 1,
