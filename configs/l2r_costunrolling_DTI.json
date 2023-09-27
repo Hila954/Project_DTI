@@ -6,10 +6,10 @@
     "print_freq": 1,
     "plot_freq": 10,
     "record_freq": 1,
-    "save_iter": 100,
+    "save_iter": 50,
     "batch_size": 1,
 
-    "aug_shape": [192, 192, 128],
+    "aug_shape": [128, 128, 128],
     "test_shape": [192, 192, 128],
     "orig_shape":[192, 192, 128],
     "num_workers": 4,
@@ -38,7 +38,7 @@
     "pretrained_model": "./models/dir",
     "n_gpu": 2,
     "alpha": 10,
-    "w_bk": false,
+    "w_bk": true,
     "w_ternary": 1,
     "w_l1": 1,
     "w_ssim": 1,
@@ -85,7 +85,7 @@
     ],
     "loss": "ncc",
     "ncc_win": [
-        7
+        3
     ],
     "smooth_flow_only": true,
     "variance_valid_len": 10,
