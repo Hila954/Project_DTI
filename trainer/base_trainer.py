@@ -200,7 +200,7 @@ class BaseTrainer:
     
     def setup(self, rank, world_size):
         os.environ['MASTER_ADDR'] = 'localhost'
-        os.environ['MASTER_PORT'] = '12356'
+        os.environ['MASTER_PORT'] = '13356'
 
         # initialize the process group 
         #! GPUUUUUUU 

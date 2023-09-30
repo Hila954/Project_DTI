@@ -209,7 +209,7 @@ class NCCLoss(nn.modules.Module):
         for i, flow in enumerate(pyramid_flows):
             log(f'Aggregating loss of pyramid level {i + 1}')
             log(f'Aggregating loss of pyramid level {i + 1}')
-
+            
             N, C, H, W, D = flow.size()
 
             img1_scaled = F.interpolate(img1, (H, W, D), mode='area')
@@ -239,7 +239,7 @@ class NCCLoss(nn.modules.Module):
                                             
             #loss_ncc = loss_ncc_func(img1_scaled*occu_mask1, img1_recons*occu_mask1)
             loss_ncc = loss_ncc_func(img1_scaled, img1_recons)
-
+            
 
             if self.args.w_sm_scales[i] >  0:
                 loss_smooth = self.loss_smooth(flow=flow12 / s, img1_scaled=img1_recons, vox_dim=vox_dim)
@@ -255,7 +255,7 @@ class NCCLoss(nn.modules.Module):
                 torch.cuda.empty_cache()
                 #loss_ncc += loss_ncc_func(img2_scaled*occu_mask2, img2_recons*occu_mask2)
                 loss_ncc += loss_ncc_func(img2_scaled, img2_recons)
-
+                
                 if self.args.w_sm_scales[i] >  0:
                     loss_smooth += self.loss_smooth(flow=flow21 / s, img1_scaled=img2_recons, vox_dim=vox_dim)
 

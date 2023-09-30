@@ -104,19 +104,21 @@ def plot_image(
 
 
 def plot_images(
-        img1, img2, img3,
+        img1, img2, img3, img4,
         axes=None,
         output_path=None,
         show=True,):
     fig = None
     if axes is None:
-        fig, axes = plt.subplots(3, 3, figsize=(10, 10))
+        fig, axes = plt.subplots(4, 3, figsize=(10, 10))
     while len(img1.shape) > 3:
         img1 = img1.squeeze(0)
     while len(img2.shape) > 3:
         img2 = img2.squeeze(0)
     while len(img3.shape) > 3:
         img3 = img3.squeeze(0)
+    while len(img4.shape) > 3:
+        img4 = img3.squeeze(0)
 
     indices = np.array(img1.shape) // 2
     i, j, k = indices
@@ -130,6 +132,9 @@ def plot_images(
     slice_x_3 = rotate(img3[i, :, :])
     slice_y_3 = rotate(img3[:, j, :])
     slice_z_3 = rotate(img3[:, :, k])
+    slice_x_4 = rotate(img4[i, :, :])
+    slice_y_4 = rotate(img4[:, j, :])
+    slice_z_4 = rotate(img4[:, :, k])
     kwargs = {}
     kwargs['cmap'] = 'gray'
     x_extent, y_extent, z_extent = [(0, b - 1) for b in img1.shape]
@@ -142,6 +147,9 @@ def plot_images(
     axes[2][0].imshow(slice_x_3, extent=y_extent + z_extent, **kwargs)
     axes[2][1].imshow(slice_y_3, extent=x_extent + z_extent, **kwargs)
     axes[2][2].imshow(slice_z_3, extent=x_extent + y_extent, **kwargs)
+    axes[3][0].imshow(slice_x_4, extent=y_extent + z_extent, **kwargs)
+    axes[3][1].imshow(slice_y_4, extent=x_extent + z_extent, **kwargs)
+    axes[3][2].imshow(slice_z_4, extent=x_extent + y_extent, **kwargs)
     plt.tight_layout()
     if output_path is not None and fig is not None:
         fig.savefig(output_path)

@@ -6,10 +6,9 @@
     "print_freq": 1,
     "plot_freq": 10,
     "record_freq": 1,
-    "save_iter": 50,
+    "save_iter": 100,
     "batch_size": 1,
-
-    "aug_shape": [128, 128, 128],
+    "aug_shape": [192, 192, 128],
     "test_shape": [192, 192, 128],
     "orig_shape":[192, 192, 128],
     "num_workers": 4,
@@ -25,8 +24,8 @@
     "frame_dif": 5,
     "no_cuda": false,
     "dry_run": false,
-    "valid_interval": 10,
-    "save_interval": 10,
+    "valid_interval": 50,
+    "save_interval": 50,
     "save_model": true,
     "data_path": "./datasets/DTI2023",
     "sp_filepth_train": "./datasets/DTI2023/train_pairs_val.csv",
@@ -83,7 +82,7 @@
         1.0, 
         1.0]
     ],
-    "loss": "ncc",
+    "loss": "ncc+cyc",
     "ncc_win": [
         3
     ],
@@ -92,7 +91,7 @@
     "variance_valid_short_len": 5,
     "variance_valid_sets": 15,
     "w_occ": true,
-    "comment": "ncc per channel, no occ mask, 20pixels shift, 1 smoothness",
+    "comment": "ncc per channel, no occ mask, 20pixels shift, from checkpoint",
     "w_admm": [
         0.0,
         0.0,

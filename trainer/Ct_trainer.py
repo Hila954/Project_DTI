@@ -562,8 +562,13 @@ class TrainFramework(BaseTrainer):
 
            
             # compute output
-            flows = self.model(img1, img2, vox_dim=vox_dim, w_bk=False)['flows_fw'][0][0]
-            pred_flows = flows.detach().squeeze(0)
+            flows = self.model(img1, img2, vox_dim=vox_dim, w_bk=True)['flows_fw'][0][0]
+            flows_fw = flows['flows_fw'][0][0]
+            flows_bw = flows['flows_bw'][0][0]
+
+            pred_flows = flows_fw.detach().squeeze(0)
+            pred_flows_bk = flows_bw.detach().squeeze(0)
+
             spacing = vox_dim.detach()
 
 
@@ -582,16 +587,22 @@ class TrainFramework(BaseTrainer):
                     
                     # warped imgs
                     img1_recons = flow_warp(img2[0].unsqueeze(0), pred_flows.unsqueeze(0))
+                    img2_recons = flow_warp(img1[0].unsqueeze(0), pred_flows_bk.unsqueeze(0))
+
                     p_warped = disp_warped_img(img1[0][selected_DTI_channel].detach().cpu(),
                                                 img1_recons[0][selected_DTI_channel].detach().cpu())
                     #self.summary_writer.add_figure('Warped_{}'.format(i_step), p_warped, self.i_epoch)
                     self.summary_writer.add_images('Warped_ch_{}_{}'.format(selected_DTI_channel, i_step), p_warped, self.i_epoch, dataformats='NHWC')
+                    p_warped_bk = disp_warped_img(img2[0][selected_DTI_channel].detach().cpu(),
+                                                img2_recons[0][selected_DTI_channel].detach().cpu())
+                    self.summary_writer.add_images('Warped_ch_{}_{}_bk'.format(selected_DTI_channel, i_step), p_warped_bk, self.i_epoch, dataformats='NHWC')
+
                     # imgs and flow                
                     p_valid, simple_flow_view = disp_training_fig(img1[0][selected_DTI_channel].detach().cpu(), img2[0][selected_DTI_channel].detach().cpu(), pred_flows.cpu())
                     self.summary_writer.add_images('Sample_ch_{}_{}'.format(selected_DTI_channel, i_step), p_valid, self.i_epoch, dataformats='NCHW')
 
                     p_valid = plot_images(img1[0][selected_DTI_channel].detach().cpu(), img1_recons[0][selected_DTI_channel].detach().cpu(),
-                                        img2[0][selected_DTI_channel].detach().cpu(), show=False)
+                                        img2[0][selected_DTI_channel].detach().cpu(), img2_recons[0][selected_DTI_channel].detach().cpu(), show=False)
                     self.summary_writer.add_figure(f'Training_Images_warping_difference_{selected_DTI_channel}', p_valid, self.i_epoch)
                     #diff_warp = torch.zeros([2, 192, 192, 64], device=self.device)
                     #diff_warp[0] = img1[0]
