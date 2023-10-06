@@ -16,6 +16,7 @@ class TrainFramework(BaseTrainer):
         super(TrainFramework, self).__init__(
             train_loader, valid_loader, model, loss_func, args)
 
+
     def _run_one_epoch(self):
         am_batch_time = AverageMeter()
         am_data_time = AverageMeter()
@@ -108,7 +109,6 @@ class TrainFramework(BaseTrainer):
             if self.rank ==0 and self.i_iter % self.args.record_freq == 0:
                 for v, name in zip(key_meters.val, key_meter_names):
                     self.summary_writer.add_scalar('Train_' + name, v, self.i_iter)
-                    self.summary_writer.add_text('Hyperparams', self.dict2mdtable(self.args), 1)
 
             if self.rank == 0 and self.i_iter % self.args.print_freq == 0:
                 istr = '{}:{}/{:4d}'.format(
@@ -562,26 +562,30 @@ class TrainFramework(BaseTrainer):
 
            
             # compute output
-            flows = self.model(img1, img2, vox_dim=vox_dim, w_bk=True)['flows_fw'][0][0]
+            flows = self.model(img1, img2, vox_dim=vox_dim, w_bk=True)
             flows_fw = flows['flows_fw'][0][0]
-            flows_bw = flows['flows_bw'][0][0]
+            flows_bk = flows['flows_bk'][0][0]
 
             pred_flows = flows_fw.detach().squeeze(0)
-            pred_flows_bk = flows_bw.detach().squeeze(0)
+            pred_flows_bk = flows_bk.detach().squeeze(0)
 
             spacing = vox_dim.detach()
 
 
-            GT_for_20pixel_shift = torch.zeros_like(pred_flows)
-            GT_for_20pixel_shift[2,  self.valid_loader.dataset.none_zero_indexes] = -20
+            GT_for_20pixel_shift = self.valid_loader.dataset.GT_shift_value*torch.ones_like(pred_flows)
+            GT_for_20pixel_shift_bk = -1*self.valid_loader.dataset.GT_shift_value*torch.ones_like(pred_flows)
+
+            #GT_for_20pixel_shift[2,  self.valid_loader.dataset.none_zero_indexes] = -20
+            
         
             #! MSE
-            MSE = torch.mean((pred_flows - GT_for_20pixel_shift) ** 2) 
+            MSE = torch.mean((pred_flows[:, :, :, 20:] - GT_for_20pixel_shift[:, :, :, 20:]) ** 2) 
             self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
 
-
+            MSE_bk = torch.mean((pred_flows_bk[:, :, :, 20:] - GT_for_20pixel_shift_bk[:, :, :, 20:]) ** 2) 
+            self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_iter)
             #!  visualize all channels
-            for selected_DTI_channel in range(img1.shape[1]):
+            for selected_DTI_channel in range(1):
 
                 if i_step % self.args.plot_freq == 0:
                     

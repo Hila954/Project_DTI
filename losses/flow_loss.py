@@ -236,7 +236,7 @@ class NCCLoss(nn.modules.Module):
 
             if i == 0:
                 s = min(H, W, D)
-                                            
+                                      
             #loss_ncc = loss_ncc_func(img1_scaled*occu_mask1, img1_recons*occu_mask1)
             loss_ncc = loss_ncc_func(img1_scaled, img1_recons)
             

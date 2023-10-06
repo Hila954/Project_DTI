@@ -39,6 +39,7 @@ class BaseTrainer:
 
     def train(self, rank, world_size):
         self._init_rank(rank,world_size)
+        self.summary_writer.add_text('Hyperparams', self.dict2mdtable(self.args), 1)
 
         for l_idx, epochs in enumerate(self.args.levels):
             if "ncc" in self.args.loss:
@@ -73,7 +74,7 @@ class BaseTrainer:
         ...
 
     def _init_rank(self, rank, world_size):
-        self.setup(rank, world_size)
+        #self.setup(rank, world_size)
         self.world_size = world_size
         self.rank = rank
         print('DDP: Rank {} initialized'.format(rank))
@@ -200,7 +201,7 @@ class BaseTrainer:
     
     def setup(self, rank, world_size):
         os.environ['MASTER_ADDR'] = 'localhost'
-        os.environ['MASTER_PORT'] = '13356'
+        os.environ['MASTER_PORT'] = '19356'
 
         # initialize the process group 
         #! GPUUUUUUU 
