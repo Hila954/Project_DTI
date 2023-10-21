@@ -572,17 +572,17 @@ class TrainFramework(BaseTrainer):
             spacing = vox_dim.detach()
 
 
-            GT_for_20pixel_shift = self.valid_loader.dataset.GT_shift_value*torch.ones_like(pred_flows)
-            GT_for_20pixel_shift_bk = -1*self.valid_loader.dataset.GT_shift_value*torch.ones_like(pred_flows)
+            GT_for_pixel_shift = self.valid_loader.dataset.GT_shift_value*torch.ones_like(pred_flows)
+            GT_for_pixel_shift_bk = -1*self.valid_loader.dataset.GT_shift_value*torch.ones_like(pred_flows)
 
             #GT_for_20pixel_shift[2,  self.valid_loader.dataset.none_zero_indexes] = -20
             
         
             #! MSE
-            MSE = torch.mean((pred_flows[:, :, :, 20:] - GT_for_20pixel_shift[:, :, :, 20:]) ** 2) 
+            MSE = torch.mean((pred_flows[:, :, :, 20:] - GT_for_pixel_shift[:, :, :, 20:]) ** 2) 
             self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
 
-            MSE_bk = torch.mean((pred_flows_bk[:, :, :, 20:] - GT_for_20pixel_shift_bk[:, :, :, 20:]) ** 2) 
+            MSE_bk = torch.mean((pred_flows_bk[:, :, :, 20:] - GT_for_pixel_shift_bk[:, :, :, 20:]) ** 2) 
             self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_iter)
             #!  visualize all channels
             for selected_DTI_channel in range(1):
