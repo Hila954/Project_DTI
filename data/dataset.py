@@ -259,7 +259,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         img1[np.isnan(img1)] = 0
         #! padding like CT
         img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
-        self.GT_shift_value = -int(s['imgs'][0].split('_')[2][0])
+        self.GT_shift_value = -int(s['imgs'][0].split('_')[2])
         #img1 = img1[:2,:,:,:]
         img2_mat_env = scipy.io.loadmat(max(s['imgs'], key = len))
         img2 = img2_mat_env['shifted_padded_DT_6C']

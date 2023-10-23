@@ -571,18 +571,22 @@ class TrainFramework(BaseTrainer):
 
             spacing = vox_dim.detach()
 
+            GT_shift_value = self.valid_loader.dataset.GT_shift_value
+            self._log.info(f'GT_shift_value={GT_shift_value}')
+            GT_for_pixel_shift = torch.zeros_like(pred_flows)
+            GT_for_pixel_shift_bk = torch.zeros_like(pred_flows)
 
-            GT_for_pixel_shift = self.valid_loader.dataset.GT_shift_value*torch.ones_like(pred_flows)
-            GT_for_pixel_shift_bk = -1*self.valid_loader.dataset.GT_shift_value*torch.ones_like(pred_flows)
+            GT_for_pixel_shift[2, :, :, :] += GT_shift_value
+            GT_for_pixel_shift_bk[2, :, :, :] += -1*GT_shift_value
 
             #GT_for_20pixel_shift[2,  self.valid_loader.dataset.none_zero_indexes] = -20
             
         
             #! MSE
-            MSE = torch.mean((pred_flows[:, :, :, 20:] - GT_for_pixel_shift[:, :, :, 20:]) ** 2) 
+            MSE = torch.mean((pred_flows[:, :, :, GT_shift_value:] - GT_for_pixel_shift[:, :, :, GT_shift_value:]) ** 2) 
             self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
 
-            MSE_bk = torch.mean((pred_flows_bk[:, :, :, 20:] - GT_for_pixel_shift_bk[:, :, :, 20:]) ** 2) 
+            MSE_bk = torch.mean((pred_flows_bk[:, :, :, GT_shift_value:] - GT_for_pixel_shift_bk[:, :, :, GT_shift_value:]) ** 2) 
             self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_iter)
             #!  visualize all channels
             for selected_DTI_channel in range(1):
@@ -661,7 +665,7 @@ class TrainFramework(BaseTrainer):
             flows = self.model(img1, img2, vox_dim=vox_dim, w_bk=False)['flows_fw'][0][0]
             pred_flows = flows.detach().squeeze(0)
             spacing = vox_dim.detach()
-           
+            
 
             if i_step % self.args.plot_freq == 0:
                 
