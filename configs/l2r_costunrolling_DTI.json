@@ -46,6 +46,7 @@
     "mwl_gaus_kernel": 3,
     "mwl_gaus_sigma": 1,
     "mwl_use_occ_masks": true,
+    "mask_scale": 0.3,
     "mwl_w_scales" : [
         50.0,
         50.0,
@@ -82,7 +83,7 @@
         1.0, 
         1.0]
     ],
-    "loss": "ncc",
+    "loss": "ncc+cyc",
     "ncc_win": [
         3
     ],
@@ -91,7 +92,7 @@
     "variance_valid_short_len": 5,
     "variance_valid_sets": 15,
     "w_occ": true,
-    "comment": "ncc per channel, no occ mask, 20pixels shift, from checkpoint",
+    "comment": "ncc per channel, occ mask, 10pixels shift, from checkpoint",
     "w_admm": [
         0.0,
         0.0,

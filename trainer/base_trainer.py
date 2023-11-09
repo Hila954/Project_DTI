@@ -62,7 +62,7 @@ class BaseTrainer:
                 torch.cuda.empty_cache()
                 
         
-        self.cleanup()
+        #self.cleanup() #! for multi GPU
         pass
 
     @abstractmethod
@@ -74,7 +74,7 @@ class BaseTrainer:
         ...
 
     def _init_rank(self, rank, world_size):
-        #self.setup(rank, world_size)
+        #self.setup(rank, world_size) #! FOR multi GPU 
         self.world_size = world_size
         self.rank = rank
         print('DDP: Rank {} initialized'.format(rank))

@@ -215,6 +215,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
                                     out_shape = args.aug_shape if not valid else args.test_shape, 
                                     valid=valid)
         self.root = pathlib.Path(root)
+        self.args = args
 
 
         #######################################################################! HERE 
@@ -268,6 +269,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         #img2 = img2[:2,:,:,:]
         images  = [(img1,(0.4, 0.4, 0.4)), (img2,(0.4, 0.4, 0.4))]
         target = {'case' : s['case']}
+        self.args.GT_Shift_value = self.GT_shift_value
         
         return images, target, 
 
