@@ -21,7 +21,7 @@ class TrainFramework(BaseTrainer):
         am_batch_time = AverageMeter()
         am_data_time = AverageMeter()
 
-        key_meter_names = ['Loss', 'l_ph', 'l_sm', "l_admm", "flow_mean", "flow_median", "remaining_voxels_percent"]
+        key_meter_names = ['Loss', 'l_ph', 'l_sm', "l_cyc", "flow_mean", "flow_median", "remaining_voxels_percent"]
         key_meters = AverageMeter(i=len(key_meter_names),names=key_meter_names, precision=6)
 
         # self._validate()
@@ -30,7 +30,7 @@ class TrainFramework(BaseTrainer):
         end = time.time()
 
         for i_step, data in enumerate(self.train_loader):
-            if i_step > self.args.epoch_size:
+            if i_step > self.args.epoch_size: ### pay attention 
                 break
 
             # Prepare data
@@ -89,7 +89,7 @@ class TrainFramework(BaseTrainer):
                     l_kpts = 0.0
 
             # update meters
-            meters = [loss, l_ph, l_sm, l_admm, flow_mean, torch.median(torch.abs(flows12[0])), remaining_voxels_percent]
+            meters = [loss, l_ph, l_sm, l_cyc, flow_mean, torch.median(torch.abs(flows12[0])), remaining_voxels_percent]
             vals = [m.item() if torch.is_tensor(m) else m for m in meters]
             key_meters.update(vals, img1.size(0))
             
@@ -109,6 +109,16 @@ class TrainFramework(BaseTrainer):
             if self.rank ==0 and self.i_iter % self.args.record_freq == 0:
                 for v, name in zip(key_meters.val, key_meter_names):
                     self.summary_writer.add_scalar('Train_' + name, v, self.i_iter)
+            
+            # Occ Mask visual view 
+            if self.i_iter % self.args.binary_mask_freq == 0:
+                binary_occ_mask1 = occ_masks[0][0].detach().cpu().squeeze()
+                binary_occ_mask2 = occ_masks[0][1].detach().cpu().squeeze()
+                img_binary_occ_mask1 = plot_image(binary_occ_mask1)
+                img_binary_occ_mask2 = plot_image(binary_occ_mask2)
+                self.summary_writer.add_figure(f'binary_mask_occ1', img_binary_occ_mask1, self.i_epoch)
+                self.summary_writer.add_figure(f'binary_mask_occ2', img_binary_occ_mask2, self.i_epoch)
+
 
             if self.rank == 0 and self.i_iter % self.args.print_freq == 0:
                 istr = '{}:{}/{:4d}'.format(
@@ -570,24 +580,24 @@ class TrainFramework(BaseTrainer):
             pred_flows_bk = flows_bk.detach().squeeze(0)
 
             spacing = vox_dim.detach()
+            if not 'DOG_HYRAX' in self.args.model_suffix: 
+                GT_shift_value = self.valid_loader.dataset.GT_shift_value
+                self._log.info(f'GT_shift_value={GT_shift_value}')
+                GT_for_pixel_shift = torch.zeros_like(pred_flows)
+                GT_for_pixel_shift_bk = torch.zeros_like(pred_flows)
 
-            GT_shift_value = self.valid_loader.dataset.GT_shift_value
-            self._log.info(f'GT_shift_value={GT_shift_value}')
-            GT_for_pixel_shift = torch.zeros_like(pred_flows)
-            GT_for_pixel_shift_bk = torch.zeros_like(pred_flows)
+                GT_for_pixel_shift[2, :, :, :] += GT_shift_value
+                GT_for_pixel_shift_bk[2, :, :, :] += -1*GT_shift_value
 
-            GT_for_pixel_shift[2, :, :, :] += GT_shift_value
-            GT_for_pixel_shift_bk[2, :, :, :] += -1*GT_shift_value
-
-            #GT_for_20pixel_shift[2,  self.valid_loader.dataset.none_zero_indexes] = -20
+                #GT_for_20pixel_shift[2,  self.valid_loader.dataset.none_zero_indexes] = -20
+                
             
-        
-            #! MSE
-            MSE = torch.mean((pred_flows[:, :, :, GT_shift_value:] - GT_for_pixel_shift[:, :, :, GT_shift_value:]) ** 2) 
-            self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
+                #! MSE
+                MSE = torch.mean((pred_flows[:, :, :, GT_shift_value:] - GT_for_pixel_shift[:, :, :, GT_shift_value:]) ** 2) 
+                self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
 
-            MSE_bk = torch.mean((pred_flows_bk[:, :, :, GT_shift_value:] - GT_for_pixel_shift_bk[:, :, :, GT_shift_value:]) ** 2) 
-            self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_iter)
+                MSE_bk = torch.mean((pred_flows_bk[:, :, :, GT_shift_value:] - GT_for_pixel_shift_bk[:, :, :, GT_shift_value:]) ** 2) 
+                self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_iter)
             #!  visualize all channels
             for selected_DTI_channel in range(1):
 
@@ -596,6 +606,30 @@ class TrainFramework(BaseTrainer):
                     # warped imgs
                     img1_recons = flow_warp(img2[0].unsqueeze(0), pred_flows.unsqueeze(0))
                     img2_recons = flow_warp(img1[0].unsqueeze(0), pred_flows_bk.unsqueeze(0))
+
+                    # VALIDATION METRICS
+
+                    # MSE 
+                    MSE = torch.mean((img1 - img1_recons) ** 2) 
+                    self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
+
+                    MSE_bk = torch.mean((img2 - img2_recons) ** 2)
+                    self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_iter)
+
+                    #RMSE
+                    RMSE = torch.sqrt(torch.mean((img1 - img1_recons) ** 2)) 
+                    self.summary_writer.add_scalar('Validation_RMSE', RMSE, self.i_iter)
+
+                    RMSE_bk = torch.sqrt(torch.mean((img2 - img2_recons) ** 2))
+                    self.summary_writer.add_scalar('Validation_RMSE_bk', RMSE_bk, self.i_iter)
+
+                    #MAE mean absolute error 
+                    MAE = torch.mean(torch.abs(img1 - img1_recons)) 
+                    self.summary_writer.add_scalar('Validation_MAE', MAE, self.i_iter)
+
+                    MAE_bk = torch.mean(torch.abs(img2 - img2_recons))
+                    self.summary_writer.add_scalar('Validation_MAE_bk', MAE_bk, self.i_iter)
+                    ###################################
 
                     p_warped = disp_warped_img(img1[0][selected_DTI_channel].detach().cpu(),
                                                 img1_recons[0][selected_DTI_channel].detach().cpu())

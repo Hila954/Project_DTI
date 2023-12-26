@@ -81,7 +81,7 @@ def plot_image(
         data = data.squeeze(0)
     indices = np.array(data.shape) // 2
     i, j, k = indices
-    k=32
+    #k=32
     slice_x = rotate(data[i, :, :])
     slice_y = rotate(data[:, j, :])
     slice_z = rotate(data[:, :, k])
@@ -122,7 +122,7 @@ def plot_images(
 
     indices = np.array(img1.shape) // 2
     i, j, k = indices
-    k=32
+    #k=32
     slice_x_1 = rotate(img1[i, :, :])
     slice_y_1 = rotate(img1[:, j, :])
     slice_z_1 = rotate(img1[:, :, k])
@@ -141,15 +141,28 @@ def plot_images(
     axes[0][0].imshow(slice_x_1, extent=y_extent + z_extent, **kwargs)
     axes[0][1].imshow(slice_y_1, extent=x_extent + z_extent, **kwargs)
     axes[0][2].imshow(slice_z_1, extent=x_extent + y_extent, **kwargs)
+    axes[0][0].set_title('Img1 slice x')
+    axes[0][1].set_title('Img1 slice y')
+    axes[0][2].set_title('Img1 slice z')
     axes[1][0].imshow(slice_x_2, extent=y_extent + z_extent, **kwargs)
     axes[1][1].imshow(slice_y_2, extent=x_extent + z_extent, **kwargs)
     axes[1][2].imshow(slice_z_2, extent=x_extent + y_extent, **kwargs)
+    axes[1][0].set_title('Img1 slice x reconstructed')
+    axes[1][1].set_title('Img1 slice y reconstructed')
+    axes[1][2].set_title('Img1 slice z reconstructed')
     axes[2][0].imshow(slice_x_3, extent=y_extent + z_extent, **kwargs)
     axes[2][1].imshow(slice_y_3, extent=x_extent + z_extent, **kwargs)
     axes[2][2].imshow(slice_z_3, extent=x_extent + y_extent, **kwargs)
+    axes[2][0].set_title('Img2 slice x')
+    axes[2][1].set_title('Img2 slice y')
+    axes[2][2].set_title('Img2 slice z')
     axes[3][0].imshow(slice_x_4, extent=y_extent + z_extent, **kwargs)
     axes[3][1].imshow(slice_y_4, extent=x_extent + z_extent, **kwargs)
     axes[3][2].imshow(slice_z_4, extent=x_extent + y_extent, **kwargs)
+    axes[3][0].set_title('Img2 slice x reconstructed')
+    axes[3][1].set_title('Img2 slice y reconstructed')
+    axes[3][2].set_title('Img2 slice z reconstructed')
+
     plt.tight_layout()
     if output_path is not None and fig is not None:
         fig.savefig(output_path)
@@ -173,7 +186,7 @@ def plot_flow(flow,
         flow = flow.squeeze(0)
     indices = np.array(flow.shape[1:]) // 2
     i, j, k = indices
-    k=32
+    #k=32
 
     slice_x_flow = (flow[1:3, i, :, :])
     slice_x_flow_col = rotate(flow_vis.flow_to_color(
@@ -218,7 +231,7 @@ def plot_training_fig(img1, img2, flow,
         flow = flow.squeeze(0)
     indices = np.array(flow.shape[1:]) // 2
     i, j, k = indices
-    k=32
+    #k=32
 
     slice_x_1 = rotate(img1[i, :, :])
     slice_y_1 = rotate(img1[:, j, :])
@@ -274,7 +287,7 @@ def plot_validation_fig(img1, img2, flow_gt, flow,
         flow = flow.squeeze(0)
     indices = np.array(flow.shape[1:]) // 2
     i, j, k = indices
-    k=32
+    #k=32
 
     slice_x_1 = rotate(img1[i, :, :])
     slice_y_1 = rotate(img1[:, j, :])
@@ -336,7 +349,7 @@ def plot_warped_img(img1, img1_recons, axes=None, output_path=None, show=False):
         img1_recons = img1_recons.squeeze(0)
     indices = np.array(img1.shape) // 2
     i, j, k = indices
-    k=32
+    #k=32
     slice_x_r = rotate(img1[i, :, :])
     slice_x_g = rotate(img1_recons[i, :, :])
     slice_x_b = (slice_x_r+slice_x_g)/2
@@ -374,7 +387,7 @@ def disp_warped_img(img1, img1_recons):
     
     indices = np.array(img1.shape) // 2
     i, j, k = indices
-    k=32
+    #k=32
     slice_x_r = rotate(img1[i, :, :])
     slice_x_g = rotate(img1_recons[i, :, :])
     slice_x_b = (slice_x_r+slice_x_g)/2
@@ -402,7 +415,7 @@ def disp_training_fig(img1, img2, flow):
         flow = flow.squeeze(0)
     indices = np.array(flow.shape[1:]) // 2
     i, j, k = indices
-    k=32
+    #k=32
 
     slice_x_1 = rotate(img1[i, :, :])
     slice_y_1 = rotate(img1[:, j, :])

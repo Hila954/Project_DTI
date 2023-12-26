@@ -21,7 +21,8 @@ class DataAugmentor:
         #assert(img_vox[0] == img_vox[1]) #! NOTICE THAT VOXEL DIM ARE DIFFERENT 
         #! CHANGED HERE TO NO np.newaxis
         if "DTI" in self.args.model_suffix:
-            sbj_dicts = [{'img': tio.ScalarImage(tensor=im)} for im,vox in zip(imgs,img_vox)]
+            #sbj_dicts = [{'img': tio.ScalarImage(tensor=im, spacing=vox)} for im,vox in zip(imgs,img_vox)]
+            sbj_dicts = [{'img': tio.ScalarImage(tensor=im, affine=np.diag(np.append(vox, 1)))} for im,vox in zip(imgs,img_vox)]
         else:
             sbj_dicts = [{'img': tio.ScalarImage(tensor=im[np.newaxis])} for im,vox in zip(imgs,img_vox)]
         
@@ -32,15 +33,35 @@ class DataAugmentor:
         
         sbjcts = [tio.Subject(sbj_d) for sbj_d in sbj_dicts]
         if self.plot: [sbj.plot() for sbj in sbj_dicts]
+
+        # First resample the images, pad, and then the rest of the transformtions 
+        resample = tio.Resample(self.args.resample_value)
+        resamples_subjcts = [resample(sbj) for sbj in sbjcts]
+        resamples_images = [(aug_sbj['img'].data.squeeze(), vox) for aug_sbj,vox in zip(resamples_subjcts,img_vox)]
+        new_img_vox = [(self.args.resample_value, self.args.resample_value, self.args.resample_value), 
+                       (self.args.resample_value, self.args.resample_value, self.args.resample_value)]
+        ## FIX the padding 
+        img1 = resamples_images[0][0] #Shape: (C, W, H, D) (W = D in our case)
+        img2 = resamples_images[1][0]
+        shape_diff1 = np.abs(np.array(self.out_shape) - np.array(img1.shape[1:]))
+        shape_diff2 = np.abs(np.array(self.out_shape) - np.array(img2.shape[1:]))
+        
+        pad1 = tio.Pad( (int(shape_diff1[0]/2), int(shape_diff1[0]/2), int(shape_diff1[1]/2), int(shape_diff1[1]/2), shape_diff1[2]//2 + 1, shape_diff1[2]//2))
+        #pad1 = tio.Pad( (0, 0, int(shape_diff1[1]/2), int(shape_diff1[1]/2), int(shape_diff1[2]/2) + 1, int(shape_diff1[2]/2)))
+        pad2 = tio.Pad(( int(shape_diff2[0]/2) + 1, int(shape_diff2[0]/2), int(shape_diff2[1]/2) + 1, int(shape_diff2[1]/2), shape_diff2[2]//2 + 1, shape_diff2[2]//2))
+        #test[0, :, :,32 ]
+       
+        resamples_padded_subjcts = [pad1(resamples_subjcts[0]), pad2(resamples_subjcts[1])]
         
         transforms = get_transforms(self.w_aug, self.valid, self.in_shape, self.out_shape, self.args)
-        aug_subjcts = [transforms(sbj) for sbj in sbjcts]
+        aug_subjcts = [transforms(sbj) for sbj in resamples_padded_subjcts]
 
-        aug_images = [(aug_sbj['img'].data.squeeze(), vox) for aug_sbj,vox in zip(aug_subjcts,img_vox)]
+        aug_images = [(aug_sbj['img'].data.squeeze(), vox) for aug_sbj,vox in zip(aug_subjcts,new_img_vox)]
         if not self.valid and 'masks' in target.keys():
             aug_msks = [(aug_sbj['mask'].data.squeeze(), vox) for aug_sbj,vox in zip(aug_subjcts,msk_vox)]
             target.update({'masks': aug_msks})
-
+        #! PLEASE NOTICE I CHEATED HERE WITH THE SHAPE  (not used to now )
+        #aug_images[0] = (aug_images[0][0][:, 24:216, :, :], aug_images[0][1])
         return aug_images, target
 
     def get_pair_transformed_images(self,trans_subj: tio.Subject, org_vox_dims, plot=False):
@@ -161,9 +182,7 @@ def get_transforms(w_aug,valid,in_shape,out_shape, args):
     else:
         #blur = tio.RandomBlur(std=(3,5), exclude=['img'])
         if "DTI" in args.model_suffix:
-            crop_img = tio.Lambda(Crop(input_shape=in_shape,target_shape=out_shape))
-
-            pipe = tio.Compose([tofloat, rescale, crop_img])
+            pipe = tio.Compose([tofloat, rescale])
         else:
             random_crop_img = tio.Lambda(RandomCrop(input_shape=in_shape,target_shape=out_shape))
             if w_aug:

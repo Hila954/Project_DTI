@@ -236,8 +236,12 @@ class NCCLoss(nn.modules.Module):
 
             if i == 0:
                 s = min(H, W, D)
-                                      
-            loss_ncc = loss_ncc_func(img1_scaled*occu_mask1, img1_recons*occu_mask1)
+            
+            if self.args.use_w_occ:                        
+                loss_ncc = loss_ncc_func(img1_scaled*occu_mask1, img1_recons*occu_mask1)
+            else:
+                loss_ncc = loss_ncc_func(img1_scaled, img1_recons)
+
             
 
             if self.args.w_sm_scales[i] >  0:
@@ -252,7 +256,10 @@ class NCCLoss(nn.modules.Module):
 
             if self.args.w_bk:
                 torch.cuda.empty_cache()
-                loss_ncc += loss_ncc_func(img2_scaled*occu_mask2, img2_recons*occu_mask2)
+                if self.args.use_w_occ: 
+                    loss_ncc += loss_ncc_func(img2_scaled*occu_mask2, img2_recons*occu_mask2)
+                else:
+                    loss_ncc += loss_ncc_func(img2_scaled, img2_recons)
                 
                 if self.args.w_sm_scales[i] >  0:
                     loss_smooth += self.loss_smooth(flow=flow21 / s, img1_scaled=img2_recons, vox_dim=vox_dim)

@@ -60,6 +60,8 @@ class BaseTrainer:
                     self.save_model(self.loss, name=self.model_suffix)
                 self.i_epoch += 1
                 torch.cuda.empty_cache()
+        
+        self.summary_writer.add_text('GT_Value:', str(self.valid_loader.dataset.GT_shift_value))
                 
         
         #self.cleanup() #! for multi GPU

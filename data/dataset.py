@@ -259,17 +259,24 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         img1 = img1_mat_env['DT_6C']
         img1[np.isnan(img1)] = 0
         #! padding like CT
-        img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
-        self.GT_shift_value = -int(s['imgs'][0].split('_')[2])
+        #img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
+        dim_size1 = img1_mat_env['VDims']
         #img1 = img1[:2,:,:,:]
         img2_mat_env = scipy.io.loadmat(max(s['imgs'], key = len))
-        img2 = img2_mat_env['shifted_padded_DT_6C']
+        if not 'DOG_HYRAX' in self.args.model_suffix: 
+            img2 = img2_mat_env['shifted_padded_DT_6C']
+            self.GT_shift_value = -int(s['imgs'][0].split('_')[2])
+            self.args.GT_Shift_value = self.GT_shift_value
+            dim_size1 = dim_size2 = (0.4, 0.4, 0.4)
+        else:
+            img2 = img2_mat_env['DT_6C_padded']
+            self.GT_shift_value = 'None'
+            dim_size2 = img2_mat_env['VDims']
         img2[np.isnan(img2)] = 0
-        img2 = np.pad(img2, [(0, 0), (32, 32), (48, 48), (0, 64)], mode='constant', constant_values=0)
+        #img2 = np.pad(img2, [(0, 0), (32, 32), (48, 48), (0, 64)], mode='constant', constant_values=0)
         #img2 = img2[:2,:,:,:]
-        images  = [(img1,(0.4, 0.4, 0.4)), (img2,(0.4, 0.4, 0.4))]
+        images  = [(img1,dim_size1), (img2,dim_size2)]
         target = {'case' : s['case']}
-        self.args.GT_Shift_value = self.GT_shift_value
         
         return images, target, 
 
