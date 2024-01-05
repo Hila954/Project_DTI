@@ -50,13 +50,13 @@ class BaseTrainer:
             for epoch in range(epochs):
                 self._run_one_epoch()
                 
-                if self.rank == 0 and self.i_epoch % self.args.valid_interval == 0:
+                if self.rank == 0 and (self.i_epoch % self.args.valid_interval == 0 or self.i_epoch == 1):
                     errors, error_names = self._validate()
 
                 
                 # In order to reduce the space occupied during debugging,
             # only the model with more than cfg.save_iter iterations will be saved.
-                if self.args.epoch_size > 0 and self.i_iter > self.args.save_iter:
+                if self.args.epoch_size > 0 and self.i_epoch > self.args.save_iter:
                     self.save_model(self.loss, name=self.model_suffix)
                 self.i_epoch += 1
                 torch.cuda.empty_cache()

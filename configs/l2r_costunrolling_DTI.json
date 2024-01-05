@@ -95,7 +95,7 @@
     "variance_valid_short_len": 5,
     "variance_valid_sets": 15,
     "w_occ": true,
-    "comment": "ncc per channel, occ mask, 10pixels shift, from checkpoint",
+    "comment": "ncc per channel, occ mask",
     "w_admm": [
         0.0,
         0.0,

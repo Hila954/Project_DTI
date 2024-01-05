@@ -106,12 +106,12 @@ class TrainFramework(BaseTrainer):
             am_batch_time.update(time.time() - end)
             end = time.time()
 
-            if self.rank ==0 and self.i_iter % self.args.record_freq == 0:
+            if self.rank ==0 and self.i_epoch % self.args.record_freq == 0:
                 for v, name in zip(key_meters.val, key_meter_names):
-                    self.summary_writer.add_scalar('Train_' + name, v, self.i_iter)
+                    self.summary_writer.add_scalar('Train_' + name, v, self.i_epoch)
             
             # Occ Mask visual view 
-            if self.i_iter % self.args.binary_mask_freq == 0:
+            if self.i_epoch % self.args.binary_mask_freq == 0:
                 binary_occ_mask1 = occ_masks[0][0].detach().cpu().squeeze()
                 binary_occ_mask2 = occ_masks[0][1].detach().cpu().squeeze()
                 img_binary_occ_mask1 = plot_image(binary_occ_mask1)
@@ -120,7 +120,7 @@ class TrainFramework(BaseTrainer):
                 self.summary_writer.add_figure(f'binary_mask_occ2', img_binary_occ_mask2, self.i_epoch)
 
 
-            if self.rank == 0 and self.i_iter % self.args.print_freq == 0:
+            if self.rank == 0 and self.i_epoch % self.args.print_freq == 0:
                 istr = '{}:{}/{:4d}'.format(
                     self.i_epoch, i_step, self.epochs) + \
                        ' Time {} Data {}'.format(am_batch_time, am_data_time) + \
@@ -136,7 +136,6 @@ class TrainFramework(BaseTrainer):
             #for param in [p for p in self.model.parameters() if p.requires_grad]:
             #    mean_grad_norm += param.grad.data.mean()
 
-            self.i_iter += 1
             # break
         
         # to save parameters to tensor board 
@@ -594,57 +593,65 @@ class TrainFramework(BaseTrainer):
             
                 #! MSE
                 MSE = torch.mean((pred_flows[:, :, :, GT_shift_value:] - GT_for_pixel_shift[:, :, :, GT_shift_value:]) ** 2) 
-                self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
+                self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_epoch)
 
                 MSE_bk = torch.mean((pred_flows_bk[:, :, :, GT_shift_value:] - GT_for_pixel_shift_bk[:, :, :, GT_shift_value:]) ** 2) 
-                self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_iter)
+                self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_epoch)
+
+            # warped imgs
+            img1_recons = flow_warp(img2, pred_flows.unsqueeze(0))[0]
+            img2_recons = flow_warp(img1, pred_flows_bk.unsqueeze(0))[0]
+
+            img1 = img1[0]
+            img2 = img2[0]
+            
+
+
             #!  visualize all channels
-            for selected_DTI_channel in range(1):
+            for selected_DTI_channel in range(img1.shape[0]):
 
                 if i_step % self.args.plot_freq == 0:
-                    
-                    # warped imgs
-                    img1_recons = flow_warp(img2[0].unsqueeze(0), pred_flows.unsqueeze(0))
-                    img2_recons = flow_warp(img1[0].unsqueeze(0), pred_flows_bk.unsqueeze(0))
-
+                               
                     # VALIDATION METRICS
+                    self._log.info(f'Running validation for ch {selected_DTI_channel}..')
 
                     # MSE 
-                    MSE = torch.mean((img1 - img1_recons) ** 2) 
-                    self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_iter)
+                    MSE = torch.mean((img1[selected_DTI_channel] - img1_recons[selected_DTI_channel]) ** 2) 
+                    self.summary_writer.add_scalar('Validation_MSE_ch_{}'.format(selected_DTI_channel), MSE, self.i_epoch)
 
-                    MSE_bk = torch.mean((img2 - img2_recons) ** 2)
-                    self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_iter)
+                    MSE_bk = torch.mean((img2[selected_DTI_channel] - img2_recons[selected_DTI_channel]) ** 2)
+                    self.summary_writer.add_scalar('Validation_MSE_bk_ch_{}'.format(selected_DTI_channel), MSE_bk, self.i_epoch)
 
                     #RMSE
-                    RMSE = torch.sqrt(torch.mean((img1 - img1_recons) ** 2)) 
-                    self.summary_writer.add_scalar('Validation_RMSE', RMSE, self.i_iter)
+                    RMSE = torch.sqrt(torch.mean((img1[selected_DTI_channel] - img1_recons[selected_DTI_channel]) ** 2)) 
+                    self.summary_writer.add_scalar('Validation_RMSE_ch_{}'.format(selected_DTI_channel), RMSE, self.i_epoch)
 
-                    RMSE_bk = torch.sqrt(torch.mean((img2 - img2_recons) ** 2))
-                    self.summary_writer.add_scalar('Validation_RMSE_bk', RMSE_bk, self.i_iter)
+                    RMSE_bk = torch.sqrt(torch.mean((img2[selected_DTI_channel] - img2_recons[selected_DTI_channel]) ** 2))
+                    self.summary_writer.add_scalar('Validation_RMSE_bk_ch_{}'.format(selected_DTI_channel), RMSE_bk, self.i_epoch)
 
                     #MAE mean absolute error 
-                    MAE = torch.mean(torch.abs(img1 - img1_recons)) 
-                    self.summary_writer.add_scalar('Validation_MAE', MAE, self.i_iter)
+                    MAE = torch.mean(torch.abs(img1[selected_DTI_channel] - img1_recons[selected_DTI_channel])) 
+                    self.summary_writer.add_scalar('Validation_MAE_ch_{}'.format(selected_DTI_channel), MAE, self.i_epoch)
 
-                    MAE_bk = torch.mean(torch.abs(img2 - img2_recons))
-                    self.summary_writer.add_scalar('Validation_MAE_bk', MAE_bk, self.i_iter)
+                    MAE_bk = torch.mean(torch.abs(img2[selected_DTI_channel] - img2_recons[selected_DTI_channel]))
+                    self.summary_writer.add_scalar('Validation_MAE_bk_ch_{}'.format(selected_DTI_channel), MAE_bk, self.i_epoch)
                     ###################################
 
-                    p_warped = disp_warped_img(img1[0][selected_DTI_channel].detach().cpu(),
-                                                img1_recons[0][selected_DTI_channel].detach().cpu())
+
+                    p_warped = disp_warped_img(img1[selected_DTI_channel].detach().cpu(),
+                                                img1_recons[selected_DTI_channel].detach().cpu())
                     #self.summary_writer.add_figure('Warped_{}'.format(i_step), p_warped, self.i_epoch)
-                    self.summary_writer.add_images('Warped_ch_{}_{}'.format(selected_DTI_channel, i_step), p_warped, self.i_epoch, dataformats='NHWC')
-                    p_warped_bk = disp_warped_img(img2[0][selected_DTI_channel].detach().cpu(),
-                                                img2_recons[0][selected_DTI_channel].detach().cpu())
-                    self.summary_writer.add_images('Warped_ch_{}_{}_bk'.format(selected_DTI_channel, i_step), p_warped_bk, self.i_epoch, dataformats='NHWC')
+                    self.summary_writer.add_images('Warped_ch_{}'.format(selected_DTI_channel), p_warped, self.i_epoch, dataformats='NHWC')
+                    p_warped_bk = disp_warped_img(img2[selected_DTI_channel].detach().cpu(),
+                                                img2_recons[selected_DTI_channel].detach().cpu())
+                    self.summary_writer.add_images('Warped_ch_{}_bk'.format(selected_DTI_channel), p_warped_bk, self.i_epoch, dataformats='NHWC')
 
                     # imgs and flow                
-                    p_valid, simple_flow_view = disp_training_fig(img1[0][selected_DTI_channel].detach().cpu(), img2[0][selected_DTI_channel].detach().cpu(), pred_flows.cpu())
-                    self.summary_writer.add_images('Sample_ch_{}_{}'.format(selected_DTI_channel, i_step), p_valid, self.i_epoch, dataformats='NCHW')
+                    p_valid, simple_flow_view = disp_training_fig(img1[selected_DTI_channel].detach().cpu(), img2[selected_DTI_channel].detach().cpu(), pred_flows.cpu())
+                    self.summary_writer.add_images('Sample_ch_{}'.format(selected_DTI_channel), p_valid, self.i_epoch, dataformats='NCHW')
 
-                    p_valid = plot_images(img1[0][selected_DTI_channel].detach().cpu(), img1_recons[0][selected_DTI_channel].detach().cpu(),
-                                        img2[0][selected_DTI_channel].detach().cpu(), img2_recons[0][selected_DTI_channel].detach().cpu(), show=False)
+                    p_valid = plot_images(img1[selected_DTI_channel].detach().cpu(), img1_recons[selected_DTI_channel].detach().cpu(),
+                                        img2[selected_DTI_channel].detach().cpu(), img2_recons[selected_DTI_channel].detach().cpu(), show=False)
                     self.summary_writer.add_figure(f'Training_Images_warping_difference_{selected_DTI_channel}', p_valid, self.i_epoch)
                     #diff_warp = torch.zeros([2, 192, 192, 64], device=self.device)
                     #diff_warp[0] = img1[0]
@@ -654,7 +661,7 @@ class TrainFramework(BaseTrainer):
                     #self.writer.add_scalar('Training error', diff_error,
                     #                       self.i_iter)
                     
-            self.summary_writer.add_figure('simple_flow_{}_middle_slice'.format(i_step), simple_flow_view, self.i_epoch)
+            self.summary_writer.add_figure('simple_flow_middle_slice', simple_flow_view, self.i_epoch)
 
             end = time.time()
 
