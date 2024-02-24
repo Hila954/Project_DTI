@@ -2,7 +2,7 @@
     "model_suffix": "model_DTI_DOG_HYRAX_yariv",
     "batch_size": 1,
     "DTI": true,
-    "resample_value": 0.4,
+    "resample_value": 0,
     "num_workers": 1,
     "epochs": 7500,
     "epoch_size": 100,

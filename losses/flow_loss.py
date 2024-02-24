@@ -222,8 +222,10 @@ class NCCLoss(nn.modules.Module):
             img2_recons = flow_warp(img1_scaled, flow21)
             if self.args.w_occ:
                 if i == 0:
-                    occu_mask1 = 1 - get_occu_mask_bidirection(flow12, flow21, self.args.mask_scale)
-                    occu_mask2 = 1 - get_occu_mask_bidirection(flow21, flow12, self.args.mask_scale)
+                    occu_mask1 = 1 - get_occu_mask_bidirection(flow12, flow21, self.args.mask_scale,
+                                                               self.args.mask_bias)
+                    occu_mask2 = 1 - get_occu_mask_bidirection(flow21, flow12, self.args.mask_scale,
+                                                               self.args.mask_bias)
                 else:
                     occu_mask1 = F.interpolate(pyramid_occu_mask1[0],
                                                (H, W, D), mode='nearest')

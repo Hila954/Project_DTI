@@ -256,7 +256,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
     def _load_sample(self, s):
         #! CHANGE TO GENERAL ACCESS 
         img1_mat_env = scipy.io.loadmat(min(s['imgs'], key = len))
-        img1 = img1_mat_env['DT_6C']
+        img1 = img1_mat_env['DT_6C_padded']
         img1[np.isnan(img1)] = 0
         #! padding like CT
         #img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
@@ -277,7 +277,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         #img2 = img2[:2,:,:,:]
         images  = [(img1,dim_size1), (img2,dim_size2)]
         target = {'case' : s['case']}
-        
+        # img1[0,50,:,:]
         return images, target, 
 
     def __len__(self):

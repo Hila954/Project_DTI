@@ -33,34 +33,48 @@ class DataAugmentor:
         
         sbjcts = [tio.Subject(sbj_d) for sbj_d in sbj_dicts]
         if self.plot: [sbj.plot() for sbj in sbj_dicts]
+        if self.args.resample_value != 0:
+            # First resample the images, pad, and then the rest of the transformtions 
+            resample = tio.Resample(self.args.resample_value)
+            resamples_subjcts = [resample(sbj) for sbj in sbjcts]
+            resamples_images = [(aug_sbj['img'].data.squeeze(), vox) for aug_sbj,vox in zip(resamples_subjcts,img_vox)]
+            new_img_vox = [(self.args.resample_value, self.args.resample_value, self.args.resample_value), 
+                        (self.args.resample_value, self.args.resample_value, self.args.resample_value)]
+        
+            img1 = resamples_images[0][0] #Shape: (C, W, H, D) 
+            img2 = resamples_images[1][0]
+        else:
+            img1 = imgs[0]
+            img2 = imgs[1]
+            get_data_width_height_depth(img1, img2)
 
-        # First resample the images, pad, and then the rest of the transformtions 
-        resample = tio.Resample(self.args.resample_value)
-        resamples_subjcts = [resample(sbj) for sbj in sbjcts]
-        resamples_images = [(aug_sbj['img'].data.squeeze(), vox) for aug_sbj,vox in zip(resamples_subjcts,img_vox)]
-        new_img_vox = [(self.args.resample_value, self.args.resample_value, self.args.resample_value), 
-                       (self.args.resample_value, self.args.resample_value, self.args.resample_value)]
         ## FIX the padding 
-        img1 = resamples_images[0][0] #Shape: (C, W, H, D) (W = D in our case)
-        img2 = resamples_images[1][0]
         shape_diff1 = np.abs(np.array(self.out_shape) - np.array(img1.shape[1:]))
         shape_diff2 = np.abs(np.array(self.out_shape) - np.array(img2.shape[1:]))
         
-        pad1 = tio.Pad( (int(shape_diff1[0]/2), int(shape_diff1[0]/2), int(shape_diff1[1]/2), int(shape_diff1[1]/2), shape_diff1[2]//2 + 1, shape_diff1[2]//2))
-        #pad1 = tio.Pad( (0, 0, int(shape_diff1[1]/2), int(shape_diff1[1]/2), int(shape_diff1[2]/2) + 1, int(shape_diff1[2]/2)))
-        pad2 = tio.Pad(( int(shape_diff2[0]/2) + 1, int(shape_diff2[0]/2), int(shape_diff2[1]/2) + 1, int(shape_diff2[1]/2), shape_diff2[2]//2 + 1, shape_diff2[2]//2))
-        #test[0, :, :,32 ]
-       
-        resamples_padded_subjcts = [pad1(resamples_subjcts[0]), pad2(resamples_subjcts[1])]
-        
-        transforms = get_transforms(self.w_aug, self.valid, self.in_shape, self.out_shape, self.args)
-        aug_subjcts = [transforms(sbj) for sbj in resamples_padded_subjcts]
 
+
+        if self.args.resample_value != 0:
+            pad1 = tio.Pad( (int(shape_diff1[0]/2), int(shape_diff1[0]/2), int(shape_diff1[1]/2), int(shape_diff1[1]/2), shape_diff1[2]//2 + 1, shape_diff1[2]//2))
+            pad2 = tio.Pad(( int(shape_diff2[0]/2) + 1, int(shape_diff2[0]/2), int(shape_diff2[1]/2) + 1, int(shape_diff2[1]/2), shape_diff2[2]//2 + 1, shape_diff2[2]//2))
+            changed_subjcts = [pad1(resamples_subjcts[0]), pad2(resamples_subjcts[1])] #resample + pad 
+        else:
+            pad1 = tio.Pad( (int(shape_diff1[0]/2), int(shape_diff1[0]/2), int(shape_diff1[1]/2), int(shape_diff1[1]/2), shape_diff1[2]//2 , shape_diff1[2]//2))
+            pad2 = tio.Pad(( int(shape_diff2[0]/2) , int(shape_diff2[0]/2), int(shape_diff2[1]/2) , int(shape_diff2[1]/2), shape_diff2[2]//2 , shape_diff2[2]//2))
+            changed_subjcts = [pad1(sbjcts[0]), pad2(sbjcts[1])] # pad only 
+            new_img_vox = img_vox
+        
+
+        transforms = get_transforms(self.w_aug, self.valid, self.in_shape, self.out_shape, self.args)
+        aug_subjcts = [transforms(sbj) for sbj in changed_subjcts]
         aug_images = [(aug_sbj['img'].data.squeeze(), vox) for aug_sbj,vox in zip(aug_subjcts,new_img_vox)]
+
+
+
         if not self.valid and 'masks' in target.keys():
             aug_msks = [(aug_sbj['mask'].data.squeeze(), vox) for aug_sbj,vox in zip(aug_subjcts,msk_vox)]
             target.update({'masks': aug_msks})
-        #! PLEASE NOTICE I CHEATED HERE WITH THE SHAPE  (not used to now )
+        #! PLEASE NOTICE I CHEATED HERE WITH THE SHAPE  (not used now )
         #aug_images[0] = (aug_images[0][0][:, 24:216, :, :], aug_images[0][1])
         return aug_images, target
 
@@ -192,3 +206,9 @@ def get_transforms(w_aug,valid,in_shape,out_shape, args):
             else:
                 pipe = tio.Compose([tofloat, rescale, random_crop_img])
     return pipe
+
+
+def get_data_width_height_depth(img1, img2):
+    img1_idx_x, img1_idx_y, img1_idx_z = np.nonzero(img1[0])
+    img2_idx_x, img2_idx_y, img2_idx_z = np.nonzero(img2[0])
+    pass
