@@ -10,9 +10,9 @@
     "binary_mask_freq": 200,
     "save_iter": 100,
     "batch_size": 1,
-    "aug_shape": [256, 192, 128],
-    "test_shape": [256, 192, 128],
-    "orig_shape":[256, 192, 128],
+    "aug_shape": [192, 192, 128],
+    "test_shape": [192, 192, 128],
+    "orig_shape":[128, 96, 64],
     "num_workers": 4,
     "test_batch_size": 1,
     "epochs": 250,
@@ -74,11 +74,11 @@
         0.0
     ],
     "w_sm_scales": [
-        0.05,
         0.0,
         0.0,
         0.0,
-        0.0
+        0.01,
+        0.01
     ],
     "w_ncc_scales": [
         [1.0,
@@ -87,7 +87,7 @@
         1.0, 
         1.0]
     ],
-    "loss": "ncc+cyc",
+    "loss": "ncc",
     "ncc_win": [
         3
     ],

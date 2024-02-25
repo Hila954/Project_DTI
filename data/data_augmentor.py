@@ -64,18 +64,19 @@ class DataAugmentor:
             changed_subjcts = [pad1(sbjcts[0]), pad2(sbjcts[1])] # pad only 
             new_img_vox = img_vox
         
-
+        
         transforms = get_transforms(self.w_aug, self.valid, self.in_shape, self.out_shape, self.args)
         aug_subjcts = [transforms(sbj) for sbj in changed_subjcts]
         aug_images = [(aug_sbj['img'].data.squeeze(), vox) for aug_sbj,vox in zip(aug_subjcts,new_img_vox)]
 
 
-
+        
         if not self.valid and 'masks' in target.keys():
             aug_msks = [(aug_sbj['mask'].data.squeeze(), vox) for aug_sbj,vox in zip(aug_subjcts,msk_vox)]
             target.update({'masks': aug_msks})
         #! PLEASE NOTICE I CHEATED HERE WITH THE SHAPE  (not used now )
         #aug_images[0] = (aug_images[0][0][:, 24:216, :, :], aug_images[0][1])
+        
         return aug_images, target
 
     def get_pair_transformed_images(self,trans_subj: tio.Subject, org_vox_dims, plot=False):
