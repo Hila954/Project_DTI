@@ -254,11 +254,10 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         return {k: [dic[k] for dic in pairs] for k in pairs[0]}
     
     def _load_sample(self, s):
-        #! CHANGE TO GENERAL ACCESS 
         img1_mat_env = scipy.io.loadmat(min(s['imgs'], key = len))
         img1 = img1_mat_env['DT_6C_padded']
         img1[np.isnan(img1)] = 0
-        #! padding like CT
+        #! padding like CT # moved it to data_augemntor
         #img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
         dim_size1 = img1_mat_env['VDims']
         #img1 = img1[:2,:,:,:]
@@ -278,6 +277,8 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         images  = [(img1,dim_size1), (img2,dim_size2)]
         target = {'case' : s['case']}
         # img1[0,50,:,:]
+        from sklearn.feature_extraction.image import img_to_graph
+        a = img_to_graph(img1[0])
         return images, target, 
 
     def __len__(self):

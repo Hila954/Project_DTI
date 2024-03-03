@@ -402,9 +402,15 @@ def disp_warped_img(img1, img1_recons):
     slice_z_g = rotate(img1_recons[:, :, k])
     slice_z_b = (slice_z_r+slice_z_g)/2
     slice_z = np.dstack((slice_z_r, slice_z_g, slice_z_b))
-    #! to fix different slices dimensions 
-    slice_z_t = slice_z[:slice_x.shape[0],:,:]
-    return np.concatenate([slice_x, slice_y, slice_z_t],axis=1)[None,::]
+    #! to fix different slices dimensions, z is 192 height, need to pad the others
+    slice_x_diff = slice_z.shape[0] - slice_x.shape[0]
+    slice_y_diff = slice_z.shape[0] - slice_y.shape[0]
+
+    slice_x = np.concatenate([slice_x, np.ones((slice_x_diff, slice_x.shape[1], slice_x.shape[2]))*slice_x[0][0]])
+    slice_y = np.concatenate([slice_y, np.ones((slice_y_diff, slice_y.shape[1], slice_y.shape[2]))*slice_y[0][0]])
+
+    #slice_z_t = slice_z[:slice_x.shape[0],:,:]
+    return np.concatenate([slice_x, slice_y, slice_z],axis=1)[None,::]
 
 def disp_training_fig(img1, img2, flow):
     while len(img1.shape) > 3:
