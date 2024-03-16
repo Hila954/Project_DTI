@@ -4,6 +4,8 @@ from utils.misc import AverageMeter
 from utils.misc import log
 from utils.visualization_utils import plot_validation_fig, plot_training_fig, plot_image, plot_images, plot_warped_img, plot_imgs_and_lms, disp_warped_img, disp_training_fig
 from utils.flow_utils import flow_warp, evaluate_flow, resize_flow_tensor
+from utils.distance_between_images import compute_distances_array
+
 import numpy as np
 from scipy.ndimage.interpolation import zoom as zoom
 import torch
@@ -546,14 +548,11 @@ class TrainFramework(BaseTrainer):
 
 
     def DTI_validate(self):
-        batch_time = AverageMeter()
         
         # only use the first GPU to run validation, multiple GPUs might raise error.
         # https://github.com/Eromera/erfnet_pytorch/issues/2#issuecomment-486142360
         #self.model = self.model.module
         self.model.eval()
-
-        end = time.time()
 
         all_error_names = []
         all_error_avgs = []
@@ -663,7 +662,6 @@ class TrainFramework(BaseTrainer):
                     
             self.summary_writer.add_figure('simple_flow_middle_slice', simple_flow_view, self.i_epoch)
 
-            end = time.time()
 
 
 
@@ -674,6 +672,39 @@ class TrainFramework(BaseTrainer):
         #     self.save_model(all_error_avgs[0], name=self.model_suffix)
 
         return all_error_avgs, all_error_names
+    
+    def _calculate_distance_between_DTI(self):
+        self.model.eval()
+
+        for i_step, data in enumerate(self.valid_loader):
+            img1, img2 = data['imgs']
+            vox_dim =torch.cat([v[:,None] for v in img1[1]],dim=1).to(self.rank)
+
+            img1, img2 = [im[0].to(self.rank) for im in [img1, img2]]
+            # check if input in the correct shape [Batch, ch, D ,W, H]
+            if len(img1.shape) == 4:
+                img1, img2 = [im.unsqueeze(1).float() for im in [img1, img2]]
+            else:
+                img1, img2 = [im.float() for im in [img1, img2]]
+
+
+            # compute output
+            flows = self.model(img1, img2, vox_dim=vox_dim, w_bk=True)
+            flows_fw = flows['flows_fw'][0][0]
+            flows_bk = flows['flows_bk'][0][0]
+
+            pred_flows = flows_fw.detach().squeeze(0)
+            pred_flows_bk = flows_bk.detach().squeeze(0)
+
+            img1, img2 = img1.cpu().numpy().squeeze(), img2.cpu().numpy().squeeze()
+
+            # choose points for the dijkstra algorithm
+            img1_idx_x, img1_idx_y, img1_idx_z = np.where(img1[0] > img1[0,0,0,0])
+            indx = 97694
+            middle_points = (img1_idx_x[indx], img1_idx_y[indx], img1_idx_z[indx])
+            #points_array = [median_point]
+            compute_distances_array(img1, img2, pred_flows, middle_points)
+
 
 
      #! COPY OF DTI FOR CT 

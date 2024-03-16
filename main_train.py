@@ -26,6 +26,8 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--test', action='store_true', help="run test (dump disp files)")
     parser.add_argument('-d', '--docker', action='store_true', help="run test (dump disp files)")
     parser.add_argument('-s', '--server', action='store_true', help='run on sever')
+    parser.add_argument('--distance', action='store_true', help='calculate and print distance between DTI images, using the loaded model ')
+
     parser.add_argument('--cuda_devices', default='0,1', help="visible cuda devices")
 
     args = parser.parse_args()
@@ -39,13 +41,18 @@ if __name__ == '__main__':
     cfg.load = load
     cfg.docker = args.docker
     
-    if args.evaluate or args.test or args.docker:
+    if args.evaluate or args.test or args.docker or args.distance:
         cfg.update({
             'levels': [1],
             'epoch_size': -1,
             'valid_interval': 1,
-            'log_interval': 1
+            'log_interval': 1,
         })
+    if args.distance:
+        cfg.update({
+            'calculate_distance': True
+        })
+         
     # if args.test or args.docker:        
     #     cfg.update({
     #         'dump_disp': True,

@@ -43,10 +43,10 @@ class DataAugmentor:
         
             img1 = resamples_images[0][0] #Shape: (C, W, H, D) 
             img2 = resamples_images[1][0]
+
         else:
             img1 = imgs[0]
             img2 = imgs[1]
-            get_data_width_height_depth(img1, img2)
 
         ## FIX the padding 
         shape_diff1 = np.abs(np.array(self.out_shape) - np.array(img1.shape[1:]))
@@ -211,5 +211,5 @@ def get_transforms(w_aug,valid,in_shape,out_shape, args):
 
 def get_data_width_height_depth(img1, img2):
     img1_idx_x, img1_idx_y, img1_idx_z = np.nonzero(img1[0])
-    img2_idx_x, img2_idx_y, img2_idx_z = np.nonzero(img2[0])
-    pass
+    #img2_idx_x, img2_idx_y, img2_idx_z = np.nonzero(img2[0])
+    return img1_idx_x, img1_idx_y, img1_idx_z

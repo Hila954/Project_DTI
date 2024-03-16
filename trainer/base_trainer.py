@@ -40,7 +40,9 @@ class BaseTrainer:
     def train(self, rank, world_size):
         self._init_rank(rank,world_size)
         self.summary_writer.add_text('Hyperparams', self.dict2mdtable(self.args), 1)
-
+        if self.args.calculate_distance:
+            self._calculate_distance_between_DTI()
+            return
         for l_idx, epochs in enumerate(self.args.levels):
             if "ncc" in self.args.loss:
                 self.loss_modules['loss_module'].ncc_win = self.args.ncc_win[l_idx]
@@ -73,6 +75,10 @@ class BaseTrainer:
 
     @abstractmethod
     def _validate(self):
+        ...
+    
+    @abstractmethod
+    def _calculate_distance_between_DTI(self):
         ...
 
     def _init_rank(self, rank, world_size):

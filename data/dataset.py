@@ -10,7 +10,6 @@ import os
 from .loaders import CSVLoader, NiftiLoader, L2RLmsLoader
 from .dicom_utils import npz_to_ndarray_and_vox_dim as file_processor
 from .dicom_utils import npz_valid_to_ndarrays_flow_vox as vld_file_processor
-
 from .data_augmentor import DataAugmentor
 
 class L2RCTDataset(Dataset, metaclass=ABCMeta):
@@ -277,8 +276,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         images  = [(img1,dim_size1), (img2,dim_size2)]
         target = {'case' : s['case']}
         # img1[0,50,:,:]
-        from sklearn.feature_extraction.image import img_to_graph
-        a = img_to_graph(img1[0])
+        
         return images, target, 
 
     def __len__(self):
