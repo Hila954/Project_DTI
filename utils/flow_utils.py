@@ -40,9 +40,9 @@ def norm_lms(lms,flow_shape):
 def flow_warp(img2, flow12, pad='border', mode='bilinear'):
     B, _, H, W, D = flow12.size()
     flow12 = torch.flip(flow12, [1])
-    base_grid = mesh_grid(B, H, W, D).type_as(img2)  # B2HW
+    base_grid = mesh_grid(B, H, W, D).type_as(img2)  #! B3HWD
     
-    v_grid = norm_grid(base_grid + flow12)  # BHW2
+    v_grid = norm_grid(base_grid + flow12)  #! BHWD3
     im1_recons = nn.functional.grid_sample(
         img2, v_grid, mode=mode, padding_mode=pad, align_corners=True)
     return im1_recons

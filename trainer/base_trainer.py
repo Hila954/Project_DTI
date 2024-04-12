@@ -38,9 +38,10 @@ class BaseTrainer:
         #    self.cyc_module = losses['cyc_module']
 
     def train(self, rank, world_size):
+
         self._init_rank(rank,world_size)
         self.summary_writer.add_text('Hyperparams', self.dict2mdtable(self.args), 1)
-        if self.args.calculate_distance:
+        if self.args.distance:
             self._calculate_distance_between_DTI()
             return
         for l_idx, epochs in enumerate(self.args.levels):

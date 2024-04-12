@@ -34,12 +34,22 @@ if __name__ == '__main__':
     
     os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_devices
 
+    # models_to_load = ["outputs/checkpoints/240112/225640_lr_0.0001_from_scratch_no_resample/model_DTI_DOG_HYRAX_yariv_model_best.pth.tar",
+    #                     "outputs/checkpoints/240202/162434_lr_0.0001_finetune_smoothness_high_occ_threshold/model_DTI_DOG_HYRAX_model_best.pth.tar",
+    #                     "outputs/checkpoints/240224/152426_lr_0.0001_smoothness_0.05_smallest_level/model_DTI_DOG_HYRAX_model_best.pth.tar",
+    #                     "outputs/checkpoints/240224/153020_lr_0.0001_smoothness_0.01_biggest_level/model_DTI_DOG_HYRAX_model_best.pth.tar",
+    #                     "outputs/checkpoints/240225/232035_lr_0.0001_0.05_sm_smallest_two_levels/model_DTI_DOG_HYRAX_model_best.pth.tar",
+    #                     "outputs/checkpoints/240225/232140_lr_0.0001_0.01_sm_smallest_two_levels/model_DTI_DOG_HYRAX_model_best.pth.tar",
+    #                     "outputs/checkpoints/240229/231322_lr_0.0001_last_two_levels_0.1/model_DTI_DOG_HYRAX_model_best.pth.tar",
+    #                     "outputs/checkpoints/240229/232731_lr_0.0001_all_levels_smothness_0.01/model_DTI_DOG_HYRAX_model_best.pth.tar",
+    #                     "outputs/checkpoints/240309/163305_lr_0.0001_all_levels_smothness_0.1/model_DTI_DOG_HYRAX_model_best.pth.tar"]
     VERBOSE = args.verbose
     load = args.load
     with open(args.config) as f:
         cfg = EasyDict(json.load(f))
     cfg.load = load
     cfg.docker = args.docker
+    cfg.distance = args.distance
     
     if args.evaluate or args.test or args.docker or args.distance:
         cfg.update({
@@ -48,11 +58,7 @@ if __name__ == '__main__':
             'valid_interval': 1,
             'log_interval': 1,
         })
-    if args.distance:
-        cfg.update({
-            'calculate_distance': True
-        })
-         
+
     # if args.test or args.docker:        
     #     cfg.update({
     #         'dump_disp': True,
@@ -81,7 +87,9 @@ if __name__ == '__main__':
     trainer = get_trainer()(
         train_set, valid_set, model, loss, cfg 
     )
+
     # run DDP
+    
     world_size = torch.cuda.device_count()
     trainer.train(0, 1)
     #! GPU 

@@ -4,7 +4,7 @@ from utils.misc import AverageMeter
 from utils.misc import log
 from utils.visualization_utils import plot_validation_fig, plot_training_fig, plot_image, plot_images, plot_warped_img, plot_imgs_and_lms, disp_warped_img, disp_training_fig
 from utils.flow_utils import flow_warp, evaluate_flow, resize_flow_tensor
-from utils.distance_between_images import compute_distances_array
+from utils.distance_between_images import compute_distances_array, compute_dijkstra_validation
 
 import numpy as np
 from scipy.ndimage.interpolation import zoom as zoom
@@ -675,7 +675,6 @@ class TrainFramework(BaseTrainer):
     
     def _calculate_distance_between_DTI(self):
         self.model.eval()
-
         for i_step, data in enumerate(self.valid_loader):
             img1, img2 = data['imgs']
             vox_dim =torch.cat([v[:,None] for v in img1[1]],dim=1).to(self.rank)
@@ -696,14 +695,26 @@ class TrainFramework(BaseTrainer):
             pred_flows = flows_fw.detach().squeeze(0)
             pred_flows_bk = flows_bk.detach().squeeze(0)
 
+            # warped imgs
+            img1_recons = flow_warp(img2, pred_flows.unsqueeze(0))[0].cpu().numpy().squeeze()
+            img2_recons = flow_warp(img1, pred_flows_bk.unsqueeze(0))[0].cpu().numpy().squeeze()
+
             img1, img2 = img1.cpu().numpy().squeeze(), img2.cpu().numpy().squeeze()
 
             # choose points for the dijkstra algorithm
             img1_idx_x, img1_idx_y, img1_idx_z = np.where(img1[0] > img1[0,0,0,0])
             indx = 97694
-            middle_points = (img1_idx_x[indx], img1_idx_y[indx], img1_idx_z[indx])
+            middle_points = (96, 96, 64)
             #points_array = [median_point]
-            compute_distances_array(img1, img2, pred_flows, middle_points)
+            #compute_distances_array(img1, img2, pred_flows, middle_points)
+            MSE_dijikstra_flow12 = compute_dijkstra_validation(img1, img1_recons, middle_points)
+            MSE_dijikstra_flow21 = compute_dijkstra_validation(img2, img2_recons, middle_points)
+
+            self._log.info(f'MSE_dijikstra_flow12={MSE_dijikstra_flow12}')
+            self._log.info(f'MSE_dijikstra_flow21={MSE_dijikstra_flow21}')
+
+
+
 
 
 
