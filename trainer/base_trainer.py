@@ -40,10 +40,10 @@ class BaseTrainer:
     def train(self, rank, world_size):
 
         self._init_rank(rank,world_size)
-        self.summary_writer.add_text('Hyperparams', self.dict2mdtable(self.args), 1)
         if self.args.distance:
             self._calculate_distance_between_DTI()
             return
+        self.summary_writer.add_text('Hyperparams', self.dict2mdtable(self.args), 1)
         for l_idx, epochs in enumerate(self.args.levels):
             if "ncc" in self.args.loss:
                 self.loss_modules['loss_module'].ncc_win = self.args.ncc_win[l_idx]
@@ -98,6 +98,7 @@ class BaseTrainer:
             self._log.info('=> configurations \n ' + cfg_str)
             self._log.info('{} training samples found'.format(len(self.train_set)))
             self._log.info('{} validation samples found'.format(len(self.valid_set)))
+            
             self.summary_writer = SummaryWriter(str(self.args.save_root))
         
         self.train_loader, self.valid_loader = self._get_dataloaders(self.train_set, self.valid_set)

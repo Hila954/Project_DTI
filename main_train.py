@@ -43,8 +43,10 @@ if __name__ == '__main__':
     #                     "outputs/checkpoints/240229/231322_lr_0.0001_last_two_levels_0.1/model_DTI_DOG_HYRAX_model_best.pth.tar",
     #                     "outputs/checkpoints/240229/232731_lr_0.0001_all_levels_smothness_0.01/model_DTI_DOG_HYRAX_model_best.pth.tar",
     #                     "outputs/checkpoints/240309/163305_lr_0.0001_all_levels_smothness_0.1/model_DTI_DOG_HYRAX_model_best.pth.tar"]
+
     VERBOSE = args.verbose
     load = args.load
+
     with open(args.config) as f:
         cfg = EasyDict(json.load(f))
     cfg.load = load

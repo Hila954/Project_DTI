@@ -706,12 +706,12 @@ class TrainFramework(BaseTrainer):
             indx = 97694
             middle_points = (96, 96, 64)
             #points_array = [median_point]
-            #compute_distances_array(img1, img2, pred_flows, middle_points)
-            MSE_dijikstra_flow12 = compute_dijkstra_validation(img1, img1_recons, middle_points)
-            MSE_dijikstra_flow21 = compute_dijkstra_validation(img2, img2_recons, middle_points)
-
-            self._log.info(f'MSE_dijikstra_flow12={MSE_dijikstra_flow12}')
-            self._log.info(f'MSE_dijikstra_flow21={MSE_dijikstra_flow21}')
+            compute_distances_array(img1, img2, pred_flows, middle_points)
+            for val in [0,1.5, 2, 5, 10, 15, 20, 30]:
+                MSE_dijikstra_flow12 = compute_dijkstra_validation(img1, img1_recons, middle_points, val)
+                MSE_dijikstra_flow21 = compute_dijkstra_validation(img2, img2_recons, middle_points, val)
+                self._log.info(f'lambda={val} MSE_dijikstra_flow12={MSE_dijikstra_flow12}')
+                self._log.info(f'lambda={val} MSE_dijikstra_flow21={MSE_dijikstra_flow21}')
 
 
 
