@@ -204,10 +204,9 @@ class CT_4DValidationset(Dataset):
                 self.validation_tuples.append(dir_files[idx])
 
 class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
-    def __init__(self, args, valid, root, sp_file, data_seg='trainval', do_aug=True, load_kpts=False, load_masks=False):
+    def __init__(self, args, valid, root, data_seg='trainval', do_aug=True):
         print(pathlib.Path.cwd())
         self.data_seg = data_seg
-        self.sp_file = Path(sp_file)
         self.csv_loader = CSVLoader()
         self.augment = DataAugmentor(args, do_aug, 
                                     in_shape = args.orig_shape, 
@@ -223,9 +222,8 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
     def collect_samples(self):
         samples = []
         scans_dir = Path(self.root) 
-        scans_list = scans_dir.files('*.mat')
+        scans_list = scans_dir.files(f'{self.args.data_case}*.mat')
         scans_list.sort()
-        pairs = self.load_valid_pairs(csv_file=self.sp_file)
 
         for idx in range(0,len(scans_list),2):
             file_name = scans_list[idx].parts()[-1]
@@ -253,21 +251,30 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
         return {k: [dic[k] for dic in pairs] for k in pairs[0]}
     
     def _load_sample(self, s):
-        img1_mat_env = scipy.io.loadmat(min(s['imgs'], key = len))
-        img1 = img1_mat_env['DT_6C_padded']
+        first_animal = s['imgs'][1] # so we get the Hyrax as first if needed
+        second_animal = s['imgs'][0]  
+
+        img1_mat_env = scipy.io.loadmat(first_animal)
+        img1 = img1_mat_env['DT_6C']
         img1[np.isnan(img1)] = 0
         #! padding like CT # moved it to data_augemntor
         #img1 = np.pad(img1, [(0, 0), (32, 32), (48, 48), (0, 66)], mode='constant', constant_values=0)
         dim_size1 = img1_mat_env['VDims']
         #img1 = img1[:2,:,:,:]
-        img2_mat_env = scipy.io.loadmat(max(s['imgs'], key = len))
-        if not 'DOG_HYRAX' in self.args.model_suffix: 
+        img2_mat_env = scipy.io.loadmat(second_animal)
+        first_animal_name = str(first_animal).split('/')[-1].split('_')[-2]
+        second_animal_name = str(second_animal).split('/')[-1].split('_')[-2]
+        self.args.first_animal_name = first_animal_name
+        self.args.second_animal_name = second_animal_name
+
+
+        if 'SHIFTED' in self.args.model_suffix: 
             img2 = img2_mat_env['shifted_padded_DT_6C']
             self.GT_shift_value = -int(s['imgs'][0].split('_')[2])
             self.args.GT_Shift_value = self.GT_shift_value
             dim_size1 = dim_size2 = (0.4, 0.4, 0.4)
         else:
-            img2 = img2_mat_env['DT_6C_padded']
+            img2 = img2_mat_env['DT_6C']
             self.GT_shift_value = 'None'
             dim_size2 = img2_mat_env['VDims']
         img2[np.isnan(img2)] = 0
@@ -442,11 +449,11 @@ def get_dataset(args,root="./raw", w_aug=False, data_type='train',frame_dif=1,sp
         return CT_4D_Variance_Valid_set(root=root, w_aug=w_aug)
     
     if data_type =='DTI_Example_train':
-        return DTI_Dataset_example(args, valid, root=root,sp_file=args.sp_filepth_train, data_seg='train',do_aug=w_aug,load_kpts=False,load_masks=True)
+        return DTI_Dataset_example(args, valid, root=root, data_seg='train',do_aug=w_aug)
     if data_type =='DTI_Example_valid':
-        return DTI_Dataset_example(args, valid, root=root,sp_file=args.sp_filepth_valid, data_seg='valid',do_aug=w_aug,load_kpts=True,load_masks=True)
+        return DTI_Dataset_example(args, valid, root=root, data_seg='valid',do_aug=w_aug)
     if data_type =='DTI_Example_test':
-        return DTI_Dataset_example(args, valid, root=root,sp_file=args.sp_filepth_valid, data_seg='valid',do_aug=w_aug,load_kpts=False,load_masks=False)
+        return DTI_Dataset_example(args, valid, root=root, data_seg='valid',do_aug=w_aug)
 
 
 

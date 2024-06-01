@@ -5,12 +5,14 @@ from utils.misc import log
 from utils.visualization_utils import plot_validation_fig, plot_training_fig, plot_image, plot_images, plot_warped_img, plot_imgs_and_lms, disp_warped_img, disp_training_fig
 from utils.flow_utils import flow_warp, evaluate_flow, resize_flow_tensor
 from utils.distance_between_images import compute_distances_array, compute_dijkstra_validation
-
 import numpy as np
 from scipy.ndimage.interpolation import zoom as zoom
 import torch
 import time
 from PIL import Image
+from losses.NCC import NCC
+from utils.distance_between_images import pick_points_in_DTI
+
 
 
 class TrainFramework(BaseTrainer):
@@ -34,8 +36,12 @@ class TrainFramework(BaseTrainer):
         for i_step, data in enumerate(self.train_loader):
             if i_step > self.args.epoch_size: ### pay attention 
                 break
+            
+            if self.i_epoch == 1: # print only once 
+                self._log.info('=> Data: {} vs {}'.format(self.args.first_animal_name, self.args.second_animal_name))
 
             # Prepare data
+
             if isinstance(data,dict):
                 img1, img2 = data['imgs']
             else: 
@@ -559,6 +565,8 @@ class TrainFramework(BaseTrainer):
 
 
         for i_step, data in enumerate(self.valid_loader):
+            self._log.info('=> Data: {} vs {}'.format(self.args.first_animal_name, self.args.second_animal_name))
+
             img1, img2 = data['imgs']
             vox_dim =torch.cat([v[:,None] for v in img1[1]],dim=1).to(self.rank)
             img1, img2 = [im[0].to(self.rank) for im in [img1, img2]]
@@ -578,7 +586,7 @@ class TrainFramework(BaseTrainer):
             pred_flows_bk = flows_bk.detach().squeeze(0)
 
             spacing = vox_dim.detach()
-            if not 'DOG_HYRAX' in self.args.model_suffix: 
+            if 'SHIFTED' in self.args.model_suffix: 
                 GT_shift_value = self.valid_loader.dataset.GT_shift_value
                 self._log.info(f'GT_shift_value={GT_shift_value}')
                 GT_for_pixel_shift = torch.zeros_like(pred_flows)
@@ -675,9 +683,14 @@ class TrainFramework(BaseTrainer):
     
     def _calculate_distance_between_DTI(self):
         self.model.eval()
+        loss_ncc_func = NCC(win=self.args.ncc_win[0]) # we will take the first one as all levels have the same ncc win
+
         for i_step, data in enumerate(self.valid_loader):
+            self._log.info('=> Data: {} vs {}'.format(self.args.first_animal_name, self.args.second_animal_name))
+
             img1, img2 = data['imgs']
-            vox_dim =torch.cat([v[:,None] for v in img1[1]],dim=1).to(self.rank)
+            vox_dim1, vox_dim2 = img1[1].squeeze().numpy(), img2[1].squeeze().numpy()
+            vox_dim =torch.cat([v[:,None] for v in img1[1]],dim=1).to(self.rank) #just take the first one in general, it is just scale in the gradient 
 
             img1, img2 = [im[0].to(self.rank) for im in [img1, img2]]
             # check if input in the correct shape [Batch, ch, D ,W, H]
@@ -696,18 +709,55 @@ class TrainFramework(BaseTrainer):
             pred_flows_bk = flows_bk.detach().squeeze(0)
 
             # warped imgs
-            img1_recons = flow_warp(img2, pred_flows.unsqueeze(0))[0].cpu().numpy().squeeze()
-            img2_recons = flow_warp(img1, pred_flows_bk.unsqueeze(0))[0].cpu().numpy().squeeze()
+            img1_recons = flow_warp(img2, pred_flows.unsqueeze(0))
+            img2_recons = flow_warp(img1, pred_flows_bk.unsqueeze(0))
+
+            # loss_ncc 
+            loss_ncc_flow12 = loss_ncc_func(img1, img1_recons)
+            loss_ncc_flow21 = loss_ncc_func(img2, img2_recons)
 
             img1, img2 = img1.cpu().numpy().squeeze(), img2.cpu().numpy().squeeze()
+            img1_recons, img2_recons = img1_recons.cpu().numpy().squeeze(), img2_recons.cpu().numpy().squeeze()
 
-            # choose points for the dijkstra algorithm
-            img1_idx_x, img1_idx_y, img1_idx_z = np.where(img1[0] > img1[0,0,0,0])
-            indx = 97694
-            middle_points = (96, 96, 64)
-            #points_array = [median_point]
-            compute_distances_array(img1, img2, pred_flows, middle_points)
-            for val in [0,1.5, 2, 5, 10, 15, 20, 30]:
+            #! DO NOT DELETE, WE CALCULATE FOR BOTH SIDES FOR NOW 
+            # pick the direction img1 --> img2 or img2 --> img1 according to the best loss
+            # if loss_ncc_flow21 >= loss_ncc_flow12:
+            #     source_img = img1
+            #     target_img = img2
+            #     flow_result = pred_flows
+            #     self._log.info('flow12 better')
+            # else:
+            #     source_img = img2
+            #     target_img = img1
+            #     flow_result = pred_flows_bk
+            #     self._log.info('flow21 better')
+            
+
+            self._log.info(f'flow12 loss {loss_ncc_flow12}')
+            self._log.info(f'flow21 loss {loss_ncc_flow21}')
+
+
+            #!!!!!!!!!!!!!!!!
+            # choose points for the dijkstra algorithm, by finding points with values != None 
+            how_many_points = 15
+
+            points_array1 = pick_points_in_DTI(img1, how_many_points) # in relation to img1 
+
+            brain_distance_flow12 = compute_distances_array(img1, img2, pred_flows, points_array1, vox_dim1, vox_dim2)
+            direction = f'{self.args.first_animal_name} to {self.args.second_animal_name} flow12'
+
+            self._log.info(f'brain_distance {direction} is {brain_distance_flow12}')
+
+            points_array2 = pick_points_in_DTI(img2, how_many_points) # in relation to img2
+
+            
+            brain_distance_flow21 = compute_distances_array(img2, img1, pred_flows_bk, points_array2, vox_dim2, vox_dim1)
+            direction = f'{self.args.second_animal_name} to {self.args.first_animal_name} flow21'
+
+            self._log.info(f'brain_distance {direction} is {brain_distance_flow21}')
+            return
+
+            for val in [100, 200]:
                 MSE_dijikstra_flow12 = compute_dijkstra_validation(img1, img1_recons, middle_points, val)
                 MSE_dijikstra_flow21 = compute_dijkstra_validation(img2, img2_recons, middle_points, val)
                 self._log.info(f'lambda={val} MSE_dijikstra_flow12={MSE_dijikstra_flow12}')

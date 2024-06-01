@@ -1,5 +1,5 @@
 {
-    "model_suffix": "model_DTI_DOG_HYRAX",
+    "model_suffix": "model_DTI",
     "dump_disp": false,
     "resample_value": 0, 
     "after_epoch": 0,
@@ -18,7 +18,7 @@
     "epochs": 250,
     "epoch_size": 100,
     "levels": [
-        6000
+        1800
     ],
     "lr": 0.0001,
     "gamma": 0.7,
@@ -29,10 +29,8 @@
     "valid_interval": 200,
     "save_interval": 50,
     "save_model": true,
-    "data_path": "./datasets/DTI2023",
-    "sp_filepth_train": "./datasets/DTI2023/train_pairs_val.csv",
-    "sp_filepth_valid": "./datasets/DTI2023/test_pairs_val.csv",
-    "valid_path": "./datasets/DTI2023",
+    "data_path": "/mnt/storage/datasets/hila_cohen_DTI/active_dataset",
+    "valid_path": "/mnt/storage/datasets/hila_cohen_DTI/active_dataset",
     "valid_type": "DTI_Example_valid",
     "train_type": "DTI_Example_train",
     "checkpoint_path": "/mnt/storage/datasets/4DCT/checkpoints",
