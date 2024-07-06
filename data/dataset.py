@@ -222,7 +222,9 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
     def collect_samples(self):
         samples = []
         scans_dir = Path(self.root) 
-        scans_list = scans_dir.files(f'{self.args.data_case}*.mat')
+        picked_animals = self.args.data_case.split('_')
+        scans_list = scans_dir.files(f'*{picked_animals[0]}*_data.mat')
+        scans_list += scans_dir.files(f'*{picked_animals[2]}*_data.mat')
         scans_list.sort()
 
         for idx in range(0,len(scans_list),2):
@@ -235,7 +237,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
                 #     continue
             sc_pair = [scans_list[idx], scans_list[idx+1]]
             sample = {'imgs': sc_pair}
-            sample['case'] = 'case_{:03d}'.format(csid)
+            sample['case'] = 'case_00' #! changed here to just case 00 as I don't care 
             try:
                 assert all([p.isfile() for p in sample['imgs']])
 

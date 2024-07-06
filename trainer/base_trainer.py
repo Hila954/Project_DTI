@@ -53,7 +53,7 @@ class BaseTrainer:
             for epoch in range(epochs):
                 self._run_one_epoch()
                 
-                if self.rank == 0 and (self.i_epoch % self.args.valid_interval == 0 or self.i_epoch == 1):
+                if self.rank == 0 and (self.i_epoch % self.args.valid_interval == 0 or self.i_epoch == epochs):
                     errors, error_names = self._validate()
 
                 
@@ -61,11 +61,18 @@ class BaseTrainer:
             # only the model with more than cfg.save_iter iterations will be saved.
                 if self.args.epoch_size > 0 and self.i_epoch > self.args.save_iter:
                     self.save_model(self.loss, name=self.model_suffix)
+                    best_model_path = self.save_root / '{}_model_best.pth.tar'.format(self.model_suffix)
                 self.i_epoch += 1
                 torch.cuda.empty_cache()
         
-        self.summary_writer.add_text('GT_Value:', str(self.valid_loader.dataset.GT_shift_value))
-                
+        # self.summary_writer.add_text('GT_Value:', str(self.valid_loader.dataset.GT_shift_value))
+        #~ take the best model and calculate the distance 
+        self._log.info("=> Loading best model for distance")
+
+        self.args.load = best_model_path
+        self.model = self._init_model(self.model)
+        self._calculate_distance_between_DTI()
+
         
         #self.cleanup() #! for multi GPU
         pass

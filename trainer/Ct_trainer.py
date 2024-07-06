@@ -683,6 +683,7 @@ class TrainFramework(BaseTrainer):
     
     def _calculate_distance_between_DTI(self):
         self.model.eval()
+        
         loss_ncc_func = NCC(win=self.args.ncc_win[0]) # we will take the first one as all levels have the same ncc win
 
         for i_step, data in enumerate(self.valid_loader):
@@ -691,6 +692,8 @@ class TrainFramework(BaseTrainer):
             img1, img2 = data['imgs']
             vox_dim1, vox_dim2 = img1[1].squeeze().numpy(), img2[1].squeeze().numpy()
             vox_dim =torch.cat([v[:,None] for v in img1[1]],dim=1).to(self.rank) #just take the first one in general, it is just scale in the gradient 
+            
+            self._log.info('=> vomdim1: {}, voxdim2 {}'.format(vox_dim1, vox_dim2))
 
             img1, img2 = [im[0].to(self.rank) for im in [img1, img2]]
             # check if input in the correct shape [Batch, ch, D ,W, H]
@@ -739,11 +742,15 @@ class TrainFramework(BaseTrainer):
 
             #!!!!!!!!!!!!!!!!
             # choose points for the dijkstra algorithm, by finding points with values != None 
-            how_many_points = 15
+            how_many_points = self.args.how_many_points_for_dist
+            chosen_lambda = self.args.lambda_distance
+
+            self._log.info(f'using {how_many_points} points ')
+            self._log.info(f'lambda is {chosen_lambda}')
 
             points_array1 = pick_points_in_DTI(img1, how_many_points) # in relation to img1 
 
-            brain_distance_flow12 = compute_distances_array(img1, img2, pred_flows, points_array1, vox_dim1, vox_dim2)
+            brain_distance_flow12 = compute_distances_array(img1, img2, pred_flows, points_array1, vox_dim1, vox_dim2, chosen_lambda)
             direction = f'{self.args.first_animal_name} to {self.args.second_animal_name} flow12'
 
             self._log.info(f'brain_distance {direction} is {brain_distance_flow12}')
@@ -751,15 +758,15 @@ class TrainFramework(BaseTrainer):
             points_array2 = pick_points_in_DTI(img2, how_many_points) # in relation to img2
 
             
-            brain_distance_flow21 = compute_distances_array(img2, img1, pred_flows_bk, points_array2, vox_dim2, vox_dim1)
+            brain_distance_flow21 = compute_distances_array(img2, img1, pred_flows_bk, points_array2, vox_dim2, vox_dim1, chosen_lambda)
             direction = f'{self.args.second_animal_name} to {self.args.first_animal_name} flow21'
 
             self._log.info(f'brain_distance {direction} is {brain_distance_flow21}')
-            return
-
-            for val in [100, 200]:
-                MSE_dijikstra_flow12 = compute_dijkstra_validation(img1, img1_recons, middle_points, val)
-                MSE_dijikstra_flow21 = compute_dijkstra_validation(img2, img2_recons, middle_points, val)
+            
+            return 
+            for val in [20, 50, 100, 200]:
+                MSE_dijikstra_flow12 = compute_dijkstra_validation(img1, img1_recons, points_array1, val)
+                MSE_dijikstra_flow21 = compute_dijkstra_validation(img2, img2_recons, points_array2, val)
                 self._log.info(f'lambda={val} MSE_dijikstra_flow12={MSE_dijikstra_flow12}')
                 self._log.info(f'lambda={val} MSE_dijikstra_flow21={MSE_dijikstra_flow21}')
 

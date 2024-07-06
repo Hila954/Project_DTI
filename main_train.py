@@ -11,6 +11,7 @@ import json
 import os
 from easydict import EasyDict
 import torch.multiprocessing as mp
+import glob
 
 
 import warnings
@@ -28,6 +29,9 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--server', action='store_true', help='run on sever') #always run of server
     parser.add_argument('--distance', action='store_true', help='calculate and print distance between DTI images, using the loaded model ')
     parser.add_argument('--case', help='take the correct corresponding data according to the case argument')
+    parser.add_argument('--lambda_distance', help='lambda for distance between points')
+    parser.add_argument('--how_many_points_for_dist', help='how many points to use fo distance calculate')
+
 
 
     parser.add_argument('--cuda_devices', default='0,1', help="visible cuda devices")
@@ -46,13 +50,29 @@ if __name__ == '__main__':
     #                     "outputs/checkpoints/240229/232731_lr_0.0001_all_levels_smothness_0.01/model_DTI_DOG_HYRAX_model_best.pth.tar",
     #                     "outputs/checkpoints/240309/163305_lr_0.0001_all_levels_smothness_0.1/model_DTI_DOG_HYRAX_model_best.pth.tar"]
     VERBOSE = args.verbose
-    load = args.load
+    checkpoints_path = '/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints'
+    #look for the model
+    picked_animals = args.case.split('_') # you have vs in the middle
+    if args.distance: 
+        for subdir, dirs, files in os.walk(checkpoints_path):
+            if picked_animals[0].lower() in subdir.lower() and picked_animals[2].lower() in subdir.lower():
+                model_to_load = glob.glob(f'{subdir}/*best.pth.tar')
+                if len(model_to_load) > 0:
+                    break
+    else:
+        model_to_load = [args.load]
+         
     with open(args.config) as f:
         cfg = EasyDict(json.load(f))
-    cfg.load = load
+    cfg.load = model_to_load[0]
     cfg.docker = args.docker
     cfg.distance = args.distance
-    cfg.data_case = args.case
+    cfg.how_many_points_for_dist = int(args.how_many_points_for_dist)
+    cfg.lambda_distance = int(args.lambda_distance)
+    if args.distance:
+        cfg.data_case = args.case + '_only_distance'
+    else:
+        cfg.data_case = args.case + '_with_distance'
     
     if args.evaluate or args.test or args.docker or args.distance:
         cfg.update({
@@ -62,19 +82,16 @@ if __name__ == '__main__':
             'log_interval': 1,
         })
 
-    # if args.test or args.docker:        
-    #     cfg.update({
-    #         'dump_disp': True,
-    #     })
 
     # store files day by day
     curr_time = datetime.datetime.now().strftime("%y%m%d%H%M%S")
-    if args.server:
-        cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / curr_time[6:]
-    else:
-        cfg.save_root = Path('./outputs/checkpoints') / curr_time[:6] / f'{curr_time[6:]}_lr_{cfg.lr}'
+    #always do servefr 
+    # if args.server:
+    #     cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / (curr_time[6:] + f'_{cfg.data_case}')
+    # else:
+    #     cfg.save_root = Path('./outputs/checkpoints') / curr_time[:6] / f'{curr_time[6:]}_lr_{cfg.lr}'
 
-    cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / curr_time[6:]
+    cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / (curr_time[6:] + f'_{cfg.data_case}' + f'_{cfg.how_many_points_for_dist}_points' + f'_{cfg.lambda_distance}_lambda')
 
     if args.docker:
         cfg.save_root = Path('docker_submission')

@@ -9,7 +9,7 @@ import random
 
 
 
-def compute_distances_array(img1, img2, flow12, points_img1, vox_dim1, vox_dim2):
+def compute_distances_array(img1, img2, flow12, points_img1, vox_dim1, vox_dim2, lambda_val = 1):
     ''' find the distance between images, kind of gromov hausdorff method.
         1. choose indexes and find the shortest path in the image (using dijkstra) 
          2.  use the flow output to find the corresponding chosen indexes and find the path in img2
@@ -17,7 +17,7 @@ def compute_distances_array(img1, img2, flow12, points_img1, vox_dim1, vox_dim2)
     
     #Init
     start_time = time.time()
-    lambda_value = 1
+    lambda_value = lambda_val
     win_len = 5
     sum_distance = 0
     #! we create connectivity graph for the whole img2 regardless of desired indices because we can't 
@@ -84,28 +84,29 @@ def compute_distances_array(img1, img2, flow12, points_img1, vox_dim1, vox_dim2)
 
 
 
-def compute_dijkstra_validation(original_img, reconstructed_img, desired_indices, lambda_value, win_len=3):
+def compute_dijkstra_validation(original_img, reconstructed_img, chosen_points, lambda_value, win_len=5):
     ''' check if the reconstruced image preserves the dijikstra distances '''
-
-
-    #take subset of the data according to the desired indices
-    cropped_original_img = original_img[:, (desired_indices[0]-win_len):(desired_indices[0]+win_len),
-                        (desired_indices[1]-win_len):(desired_indices[1]+win_len),
-                        (desired_indices[2]-win_len):(desired_indices[2]+win_len)]
-    cropped_reconstructed_img = reconstructed_img[:, (desired_indices[0]-win_len):(desired_indices[0]+win_len),
-                (desired_indices[1]-win_len):(desired_indices[1]+win_len),
-                (desired_indices[2]-win_len):(desired_indices[2]+win_len)]
-
-    final_connectivity_graph = create_DTI_connectivity_graph(cropped_original_img, lambda_value)
-    reconstructed_final_connectivity_graph = create_DTI_connectivity_graph(cropped_reconstructed_img, lambda_value)
-
-
-    shortest_path_subimage = dijkstra(final_connectivity_graph)
-    shortest_path_subimage_reconstructed = dijkstra(reconstructed_final_connectivity_graph)
     
+    sum_of_mean = 0
+    for desired_indices in chosen_points:
+        #take subset of the data according to the desired indices
+        cropped_original_img = original_img[:, (desired_indices[0]-win_len):(desired_indices[0]+win_len),
+                            (desired_indices[1]-win_len):(desired_indices[1]+win_len),
+                            (desired_indices[2]-win_len):(desired_indices[2]+win_len)]
+        cropped_reconstructed_img = reconstructed_img[:, (desired_indices[0]-win_len):(desired_indices[0]+win_len),
+                    (desired_indices[1]-win_len):(desired_indices[1]+win_len),
+                    (desired_indices[2]-win_len):(desired_indices[2]+win_len)]
+
+        final_connectivity_graph = create_DTI_connectivity_graph(cropped_original_img, lambda_value)
+        reconstructed_final_connectivity_graph = create_DTI_connectivity_graph(cropped_reconstructed_img, lambda_value)
 
 
-    return np.mean((shortest_path_subimage - shortest_path_subimage_reconstructed) ** 2) 
+        shortest_path_subimage = dijkstra(final_connectivity_graph)
+        shortest_path_subimage_reconstructed = dijkstra(reconstructed_final_connectivity_graph)
+        sum_of_mean += np.mean((shortest_path_subimage - shortest_path_subimage_reconstructed) ** 2)
+
+
+    return sum_of_mean/len(chosen_points)
 
 
 def create_DTI_connectivity_graph(image, lambda_value, optional_mask=None, vox_dim=(1, 1, 1)):
@@ -125,7 +126,7 @@ def create_DTI_connectivity_graph(image, lambda_value, optional_mask=None, vox_d
     
     #! to consider the vox dim of the images we want that each step in some direction will preset dx/dy/dz accordingly 
     image_of_dxdydz = mesh_grid_scale_fix(image.shape[1], image.shape[2], image.shape[3], vox_dim)
-    connectivity_graph_for_dxdydz = img_to_graph(image_of_dxdydz)
+    connectivity_graph_for_dxdydz = img_to_graph(image_of_dxdydz) #gradient so now each cell has the corresponding dx dy dz 
 
     final_connectivity_graph = connectivity_graph_for_dxdydz + Intensity_connectivity_graph
     #~ some backup for now ~~~~~~~~~~
@@ -201,6 +202,7 @@ def mesh_grid_scale_fix(H, W, D, image_dxdydz):
 
 
 def pick_points_in_DTI(img, needed_points_amount):
+    random.seed(10)
     points = []
     img1_x_range, img1_y_range, img1_z_range = np.where(np.sum(img, axis = 0) > np.sum(img, axis = 0)[0,0,0])
     for picked_point in range(needed_points_amount):
