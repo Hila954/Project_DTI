@@ -38,7 +38,7 @@ class TrainFramework(BaseTrainer):
                 break
             
             if self.i_epoch == 1: # print only once 
-                self._log.info('=> Data: {} vs {}'.format(self.args.first_animal_name, self.args.second_animal_name))
+                self._log.info('=> Training Data: {} vs {}'.format(self.args.first_animal_name, self.args.second_animal_name))
 
             # Prepare data
 
@@ -722,48 +722,40 @@ class TrainFramework(BaseTrainer):
             img1, img2 = img1.cpu().numpy().squeeze(), img2.cpu().numpy().squeeze()
             img1_recons, img2_recons = img1_recons.cpu().numpy().squeeze(), img2_recons.cpu().numpy().squeeze()
 
-            #! DO NOT DELETE, WE CALCULATE FOR BOTH SIDES FOR NOW 
-            # pick the direction img1 --> img2 or img2 --> img1 according to the best loss
-            # if loss_ncc_flow21 >= loss_ncc_flow12:
-            #     source_img = img1
-            #     target_img = img2
-            #     flow_result = pred_flows
-            #     self._log.info('flow12 better')
-            # else:
-            #     source_img = img2
-            #     target_img = img1
-            #     flow_result = pred_flows_bk
-            #     self._log.info('flow21 better')
             
 
             self._log.info(f'flow12 loss {loss_ncc_flow12}')
             self._log.info(f'flow21 loss {loss_ncc_flow21}')
 
-
-            #!!!!!!!!!!!!!!!!
             # choose points for the dijkstra algorithm, by finding points with values != None 
             how_many_points = self.args.how_many_points_for_dist
             chosen_lambda = self.args.lambda_distance
 
             self._log.info(f'using {how_many_points} points ')
             self._log.info(f'lambda is {chosen_lambda}')
+            if loss_ncc_flow21 >= loss_ncc_flow12:
+                self._log.info('flow12 smaller or equal')
+                points_array1 = pick_points_in_DTI(img1, how_many_points) # in relation to img1 
 
-            points_array1 = pick_points_in_DTI(img1, how_many_points) # in relation to img1 
+                brain_distance_flow12 = compute_distances_array(img1, img2, pred_flows, points_array1, vox_dim1, vox_dim2, chosen_lambda)
+                direction = f'{self.args.first_animal_name} to {self.args.second_animal_name} flow12'
 
-            brain_distance_flow12 = compute_distances_array(img1, img2, pred_flows, points_array1, vox_dim1, vox_dim2, chosen_lambda)
-            direction = f'{self.args.first_animal_name} to {self.args.second_animal_name} flow12'
+                self._log.info(f'brain_distance {direction} is {brain_distance_flow12}')
+                final_distance = brain_distance_flow12
+            else:
+                self._log.info('flow21 smaller')
 
-            self._log.info(f'brain_distance {direction} is {brain_distance_flow12}')
+                points_array2 = pick_points_in_DTI(img2, how_many_points) # in relation to img2
 
-            points_array2 = pick_points_in_DTI(img2, how_many_points) # in relation to img2
+                
+                brain_distance_flow21 = compute_distances_array(img2, img1, pred_flows_bk, points_array2, vox_dim2, vox_dim1, chosen_lambda)
+                direction = f'{self.args.second_animal_name} to {self.args.first_animal_name} flow21'
+
+                self._log.info(f'brain_distance {direction} is {brain_distance_flow21}')
+                final_distance = brain_distance_flow21
 
             
-            brain_distance_flow21 = compute_distances_array(img2, img1, pred_flows_bk, points_array2, vox_dim2, vox_dim1, chosen_lambda)
-            direction = f'{self.args.second_animal_name} to {self.args.first_animal_name} flow21'
-
-            self._log.info(f'brain_distance {direction} is {brain_distance_flow21}')
-            
-            return 
+            return final_distance
             for val in [20, 50, 100, 200]:
                 MSE_dijikstra_flow12 = compute_dijkstra_validation(img1, img1_recons, points_array1, val)
                 MSE_dijikstra_flow21 = compute_dijkstra_validation(img2, img2_recons, points_array2, val)

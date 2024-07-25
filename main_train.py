@@ -12,6 +12,8 @@ import os
 from easydict import EasyDict
 import torch.multiprocessing as mp
 import glob
+import itertools
+import json
 
 
 import warnings
@@ -49,71 +51,98 @@ if __name__ == '__main__':
     #                     "outputs/checkpoints/240229/231322_lr_0.0001_last_two_levels_0.1/model_DTI_DOG_HYRAX_model_best.pth.tar",
     #                     "outputs/checkpoints/240229/232731_lr_0.0001_all_levels_smothness_0.01/model_DTI_DOG_HYRAX_model_best.pth.tar",
     #                     "outputs/checkpoints/240309/163305_lr_0.0001_all_levels_smothness_0.1/model_DTI_DOG_HYRAX_model_best.pth.tar"]
+    Animals_to_check = ['Dog',
+                        'Hyrax',
+                        'WildRat2',
+                        'Cow1',
+                        'Giraffe1',
+                        'Orangutan1',
+                        'Donkey',
+                        'Chimpanzee',
+                        'Horse1']
+    combinations = list(itertools.combinations(Animals_to_check, 2))
+    combinations_cases = [f'{pair[0]}_vs_{pair[1]}' for pair in combinations]
     VERBOSE = args.verbose
     checkpoints_path = '/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints'
+    case = args.case
+    distances_dict = {}
+    for animal in Animals_to_check:
     #look for the model
-    picked_animals = args.case.split('_') # you have vs in the middle
-    if args.distance: 
-        for subdir, dirs, files in os.walk(checkpoints_path):
-            if picked_animals[0].lower() in subdir.lower() and picked_animals[2].lower() in subdir.lower():
-                model_to_load = glob.glob(f'{subdir}/*best.pth.tar')
-                if len(model_to_load) > 0:
-                    break
-    else:
-        model_to_load = [args.load]
-         
-    with open(args.config) as f:
-        cfg = EasyDict(json.load(f))
-    cfg.load = model_to_load[0]
-    cfg.docker = args.docker
-    cfg.distance = args.distance
-    cfg.how_many_points_for_dist = int(args.how_many_points_for_dist)
-    cfg.lambda_distance = int(args.lambda_distance)
-    if args.distance:
-        cfg.data_case = args.case + '_only_distance'
-    else:
-        cfg.data_case = args.case + '_with_distance'
-    
-    if args.evaluate or args.test or args.docker or args.distance:
-        cfg.update({
-            'levels': [1],
-            'epoch_size': -1,
-            'valid_interval': 1,
-            'log_interval': 1,
-        })
+        model_to_load = []
+        case = f'Wolf1_vs_{animal}'
+        picked_animals = case.split('_') # you have vs in the middle
+        is_only_distance = args.distance
+        if is_only_distance: 
+            for subdir, dirs, files in os.walk(checkpoints_path):
+                if picked_animals[0].lower() in subdir.lower() and picked_animals[2].lower() in subdir.lower():
+                    model_to_load = glob.glob(f'{subdir}/*best.pth.tar')
+                    if len(model_to_load) > 0:
+                        break
+            if len(model_to_load) == 0:
+                is_only_distance = False # if no model was found, disable distance only and train  
+                model_to_load = [args.load]
+        else:
+            model_to_load = [args.load]
+            
+        with open(args.config) as f:
+            cfg = EasyDict(json.load(f))
+        cfg.load = model_to_load[0]
+        cfg.docker = args.docker
+        cfg.distance = is_only_distance
+        cfg.how_many_points_for_dist = int(args.how_many_points_for_dist)
+        cfg.lambda_distance = int(args.lambda_distance)
+        if is_only_distance:
+            cfg.data_case = case + '_only_distance'
+        else:
+            cfg.data_case = case + '_with_distance'
+        
+        if args.evaluate or args.test or args.docker or is_only_distance:
+            cfg.update({
+                'levels': [1],
+                'epoch_size': -1,
+                'valid_interval': 1,
+                'log_interval': 1,
+            })
 
 
-    # store files day by day
-    curr_time = datetime.datetime.now().strftime("%y%m%d%H%M%S")
-    #always do servefr 
-    # if args.server:
-    #     cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / (curr_time[6:] + f'_{cfg.data_case}')
-    # else:
-    #     cfg.save_root = Path('./outputs/checkpoints') / curr_time[:6] / f'{curr_time[6:]}_lr_{cfg.lr}'
+        # store files day by day
+        curr_time = datetime.datetime.now().strftime("%y%m%d%H%M%S")
+        #always do servefr 
+        # if args.server:
+        #     cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / (curr_time[6:] + f'_{cfg.data_case}')
+        # else:
+        #     cfg.save_root = Path('./outputs/checkpoints') / curr_time[:6] / f'{curr_time[6:]}_lr_{cfg.lr}'
 
-    cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / (curr_time[6:] + f'_{cfg.data_case}' + f'_{cfg.how_many_points_for_dist}_points' + f'_{cfg.lambda_distance}_lambda')
+        cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / (curr_time[6:] + f'_{cfg.data_case}' + f'_{cfg.how_many_points_for_dist}_points' + f'_{cfg.lambda_distance}_lambda')
 
-    if args.docker:
-        cfg.save_root = Path('docker_submission')
+        if args.docker:
+            cfg.save_root = Path('docker_submission')
 
-    cfg.save_root.makedirs_p()
+        cfg.save_root.makedirs_p()
 
-    train_set = get_dataset(cfg, valid=False, root=cfg.data_path, w_aug=True, data_type=cfg.train_type, frame_dif=cfg.frame_dif)
-    if args.docker:
-            valid_set = get_dataset(cfg, valid=True, root=cfg.valid_path, w_aug=False, data_type='l2r_test')
-    else:
-        valid_set = get_dataset(cfg, valid=True, root=cfg.valid_path, w_aug=False, data_type=cfg.valid_type)
-    model = get_model(cfg)
-    loss = get_loss(cfg)
-    
-    trainer = get_trainer()(
-        train_set, valid_set, model, loss, cfg 
-    )
+        train_set = get_dataset(cfg, valid=False, root=cfg.data_path, w_aug=True, data_type=cfg.train_type, frame_dif=cfg.frame_dif)
+        if args.docker:
+                valid_set = get_dataset(cfg, valid=True, root=cfg.valid_path, w_aug=False, data_type='l2r_test')
+        else:
+            valid_set = get_dataset(cfg, valid=True, root=cfg.valid_path, w_aug=False, data_type=cfg.valid_type)
+        model = get_model(cfg)
+        loss = get_loss(cfg)
+        
+        trainer = get_trainer()(
+            train_set, valid_set, model, loss, cfg 
+        )
 
-    # run DDP
-    
-    world_size = torch.cuda.device_count()
-    trainer.train(0, 1)
+        # run DDP
+        
+        world_size = torch.cuda.device_count()
+        distances_dict[case] = trainer.train(0, 1)
+
+    save_root_json = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/distances_json') / curr_time[:6] 
+    save_root_json.makedirs_p()
+    json_name = (curr_time[6:] + f'_{cfg.how_many_points_for_dist}_points' + f'_{cfg.lambda_distance}_lambda.json')
+    # write all to json 
+    with open(os.path.join(save_root_json, json_name), 'w') as fp:
+        json.dump(distances_dict, fp)
 #! GPU 
 # mp.spawn(trainer.train,
 #           args=(world_size,),

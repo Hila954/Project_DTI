@@ -41,8 +41,9 @@ class BaseTrainer:
 
         self._init_rank(rank,world_size)
         if self.args.distance:
-            self._calculate_distance_between_DTI()
-            return
+            final_distance = self._calculate_distance_between_DTI()
+            self._log.handlers.clear()
+            return final_distance
         self.summary_writer.add_text('Hyperparams', self.dict2mdtable(self.args), 1)
         for l_idx, epochs in enumerate(self.args.levels):
             if "ncc" in self.args.loss:
@@ -71,11 +72,11 @@ class BaseTrainer:
 
         self.args.load = best_model_path
         self.model = self._init_model(self.model)
-        self._calculate_distance_between_DTI()
-
-        
+        final_distance = self._calculate_distance_between_DTI()
+        self._log.handlers.clear()
+        return final_distance
         #self.cleanup() #! for multi GPU
-        pass
+        
 
     @abstractmethod
     def _run_one_epoch(self):
@@ -102,7 +103,7 @@ class BaseTrainer:
 
             # show configurations
             cfg_str = pprint.pformat(self.args)
-            self._log.info('=> configurations \n ' + cfg_str)
+            self._log.debug('=> configurations \n ' + cfg_str)
             self._log.info('{} training samples found'.format(len(self.train_set)))
             self._log.info('{} validation samples found'.format(len(self.valid_set)))
             

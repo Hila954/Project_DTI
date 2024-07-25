@@ -229,7 +229,7 @@ class DTI_Dataset_example(Dataset, metaclass=ABCMeta):
 
         for idx in range(0,len(scans_list),2):
             file_name = scans_list[idx].parts()[-1]
-            csid = int(file_name.split('_')[1])
+            #csid = int(file_name.split('_')[1])
             # if self.data_seg != 'trainval':
                 # if self.data_seg == 'train' and csid in pairs['fixed']:
                 #     continue

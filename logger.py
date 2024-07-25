@@ -4,7 +4,7 @@ import logging.handlers
 from path import Path
 
 
-def init_logger(level='INFO', log_dir='./', log_name='main_logger', filename='main.log'):
+def init_logger(level='DEBUG', log_dir='./', log_name='main_logger', filename='main.log'):
 
     logger = logging.getLogger(log_name)
     if len(logger.handlers) == 0:
@@ -20,8 +20,8 @@ def init_logger(level='INFO', log_dir='./', log_name='main_logger', filename='ma
         fh = logging.StreamHandler()
         formatter = logging.Formatter('[%(levelname)s] %(message)s',)
         fh.setFormatter(formatter)
+        fh.setLevel('INFO')
         logger.addHandler(fh)
 
         logger.setLevel(level)
-    logger.info("Start training")
     return logger
