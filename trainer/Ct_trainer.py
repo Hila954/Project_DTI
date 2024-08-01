@@ -730,14 +730,18 @@ class TrainFramework(BaseTrainer):
             # choose points for the dijkstra algorithm, by finding points with values != None 
             how_many_points = self.args.how_many_points_for_dist
             chosen_lambda = self.args.lambda_distance
+            win_len_for_distance = self.args.win_len_for_distance
 
             self._log.info(f'using {how_many_points} points ')
             self._log.info(f'lambda is {chosen_lambda}')
+            self._log.info(f'win_len_for_distance is {win_len_for_distance}')
+
             if loss_ncc_flow21 >= loss_ncc_flow12:
                 self._log.info('flow12 smaller or equal')
                 points_array1 = pick_points_in_DTI(img1, how_many_points) # in relation to img1 
 
-                brain_distance_flow12 = compute_distances_array(img1, img2, pred_flows, points_array1, vox_dim1, vox_dim2, chosen_lambda)
+                brain_distance_flow12 = compute_distances_array(img1, img2, pred_flows, points_array1, vox_dim1, vox_dim2,
+                                                                 chosen_lambda, win_len_for_distance)
                 direction = f'{self.args.first_animal_name} to {self.args.second_animal_name} flow12'
 
                 self._log.info(f'brain_distance {direction} is {brain_distance_flow12}')
@@ -748,7 +752,8 @@ class TrainFramework(BaseTrainer):
                 points_array2 = pick_points_in_DTI(img2, how_many_points) # in relation to img2
 
                 
-                brain_distance_flow21 = compute_distances_array(img2, img1, pred_flows_bk, points_array2, vox_dim2, vox_dim1, chosen_lambda)
+                brain_distance_flow21 = compute_distances_array(img2, img1, pred_flows_bk, points_array2, vox_dim2, vox_dim1,
+                                                                 chosen_lambda, win_len_for_distance)
                 direction = f'{self.args.second_animal_name} to {self.args.first_animal_name} flow21'
 
                 self._log.info(f'brain_distance {direction} is {brain_distance_flow21}')
@@ -756,11 +761,6 @@ class TrainFramework(BaseTrainer):
 
             
             return final_distance
-            for val in [20, 50, 100, 200]:
-                MSE_dijikstra_flow12 = compute_dijkstra_validation(img1, img1_recons, points_array1, val)
-                MSE_dijikstra_flow21 = compute_dijkstra_validation(img2, img2_recons, points_array2, val)
-                self._log.info(f'lambda={val} MSE_dijikstra_flow12={MSE_dijikstra_flow12}')
-                self._log.info(f'lambda={val} MSE_dijikstra_flow21={MSE_dijikstra_flow21}')
 
 
 

@@ -9,7 +9,7 @@ import random
 
 
 
-def compute_distances_array(img1, img2, flow12, points_img1, vox_dim1, vox_dim2, lambda_val = 1):
+def compute_distances_array(img1, img2, flow12, points_img1, vox_dim1, vox_dim2, lambda_val = 1, win_len = 5):
     ''' find the distance between images, kind of gromov hausdorff method.
         1. choose indexes and find the shortest path in the image (using dijkstra) 
          2.  use the flow output to find the corresponding chosen indexes and find the path in img2
@@ -18,7 +18,6 @@ def compute_distances_array(img1, img2, flow12, points_img1, vox_dim1, vox_dim2,
     #Init
     start_time = time.time()
     lambda_value = lambda_val
-    win_len = 5
     sum_distance = 0
     #! we create connectivity graph for the whole img2 regardless of desired indices because we can't 
     #! know where the corresponding points from img1 will appear, so do it once and not in loop
