@@ -3,11 +3,13 @@ import numpy as np
 import json 
 import matplotlib.pyplot as plt
 from sklearn.manifold import MDS
+import os
+import glob
 
 
 
 #from stackover flow 
-def render_mpl_table(data, col_width=3.0, row_height=0.625, font_size=14,
+def render_mpl_table(data, fig_title, col_width=3.0, row_height=0.625, font_size=14,
                      header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
                      bbox=[0, 0, 1, 1], header_columns=0,
                      ax=None, **kwargs):
@@ -19,7 +21,7 @@ def render_mpl_table(data, col_width=3.0, row_height=0.625, font_size=14,
                           rowLabels=data.columns, **kwargs)
     mpl_table.auto_set_font_size(False)
     mpl_table.set_fontsize(font_size)
-
+    ax.set_title(fig_title, {'fontsize': 16})
     for k, cell in mpl_table._cells.items():
         cell.set_edgecolor(edge_color)
         if k[0] == 0 or k[1] < header_columns:
@@ -30,11 +32,9 @@ def render_mpl_table(data, col_width=3.0, row_height=0.625, font_size=14,
     return ax.get_figure(), ax
 
 if __name__ == '__main__':
-    distances_json_path = '/mnt/storage/datasets/hila_cohen_DTI/outputs/distances_json/240721/124614_50_points_1_lambda.json'
-    distances_json_wolf = '/mnt/storage/datasets/hila_cohen_DTI/outputs/distances_json/240724/134009_50_points_1_lambda.json'
-    distances_dict = json.load(open(distances_json_path))
-    distances_dict_wolf = json.load(open(distances_json_wolf))
-    distances_dict.update(distances_dict_wolf)
+    np.random.seed(10)
+    distances_path = '/mnt/storage/datasets/hila_cohen_DTI/outputs/distances_json'
+    outputs_dir = '/mnt/storage/datasets/hila_cohen_DTI/outputs/graphs/'
     Animals_to_check = ['Dog',
                         'Hyrax',
                         'WildRat2',
@@ -45,33 +45,40 @@ if __name__ == '__main__':
                         'Chimpanzee',
                         'Horse1',
                         'Wolf1']
-    df_distances = pd.DataFrame(columns=Animals_to_check, index=pd.Index(Animals_to_check))
-    df_distances = df_distances.fillna(0)
+    for folder in os.listdir(distances_path):
+        distances_json = glob.glob(f'{os.path.join(distances_path, folder)}/*.json')
+        for json_file in distances_json:
+            name_json = os.path.split(json_file)[-1].split('.')[0]
+            distances_dict = json.load(open(json_file))
 
-    for key in distances_dict.keys():
-        current_distance = round(distances_dict[key], 2)
-        animal_1 = key.split('_')[0]
-        animal_2 = key.split('_')[2]
-        df_distances.loc[animal_1, animal_2] = current_distance
-        df_distances.loc[animal_2, animal_1] = current_distance
-    fig,ax = render_mpl_table(df_distances, header_columns=0, col_width=2.0)
+            df_distances = pd.DataFrame(columns=Animals_to_check, index=pd.Index(Animals_to_check))
+            df_distances = df_distances.fillna(0)
 
-    fig.savefig("table_distance.png")
+            for key in distances_dict.keys():
+                current_distance = round(distances_dict[key], 2)
+                animal_1 = key.split('_')[0]
+                animal_2 = key.split('_')[2]
+                df_distances.loc[animal_1, animal_2] = current_distance
+                df_distances.loc[animal_2, animal_1] = current_distance
+            fig,ax = render_mpl_table(df_distances, name_json, header_columns=0, col_width=2.0)
 
-    # Create an MDS model with the desired number of dimensions
-    # Number of dimensions for visualization
-    n_components = 2 
-    mds = MDS(n_components=n_components, normalized_stress=False, dissimilarity='precomputed')
-    # Fit the MDS model to your data
-    X_reduced = mds.fit_transform(df_distances)
-    # Visualize the dms data
-    fig, ax = plt.subplots()
-    ax.scatter(X_reduced[:, 0], X_reduced[:, 1],)
-    for i, txt in enumerate(Animals_to_check):
-        ax.annotate(txt, (X_reduced[i, 0], X_reduced[i, 1]))
-    plt.title("MDS Visualization")
-    plt.xlabel("MDS Dimension 1")
-    plt.ylabel("MDS Dimension 2")
-    plt.savefig("mds.png")
+            fig.savefig(outputs_dir + f"table_distance_{name_json}.png")
+
+            # Create an MDS model with the desired number of dimensions
+            # Number of dimensions for visualization
+            n_components = 2 
+            mds = MDS(n_components=n_components, normalized_stress=False, dissimilarity='precomputed')
+            # Fit the MDS model to your data
+            X_reduced = mds.fit_transform(df_distances)
+            # Visualize the dms data
+            fig, ax = plt.subplots()
+            ax.scatter(X_reduced[:, 0], X_reduced[:, 1],)
+            for i, txt in enumerate(Animals_to_check):
+                ax.annotate(txt, (X_reduced[i, 0], X_reduced[i, 1]))
+            plt.title("MDS Visualization")
+            plt.xlabel("MDS Dimension 1")
+            plt.ylabel("MDS Dimension 2")
+            plt.savefig(outputs_dir + f"{name_json}_mds.png")
+            plt.close()
 
 

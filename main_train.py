@@ -22,7 +22,6 @@ warnings.filterwarnings("ignore", category=UserWarning)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='4DCT Optical Flow Net')
     parser.add_argument('-c', '--config', default='configs/l2r_costunrolling.json', help="path for config file")
-    parser.add_argument('-v', '--verbose', action='store_true', help="Verbose logs")
     parser.add_argument('-p', '--plot', action='store_true', help="Plot samples along training")
     parser.add_argument('-l', '--load', help="Model weights *.pth.tar file")
     parser.add_argument('-e', '--evaluate', action='store_true', help="run eval only")
@@ -63,12 +62,11 @@ if __name__ == '__main__':
                         'Wolf1']
     combinations = list(itertools.combinations(Animals_to_check, 2))
     combinations_cases = [f'{pair[0]}_vs_{pair[1]}' for pair in combinations]
-    VERBOSE = args.verbose # not used 
     checkpoints_path = '/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints'
     case = args.case
-    for win_size in [7, 9, 11]:
+    for lambda_num in [0, 200, 2000, 4000]:
         distances_dict = {}
-        args.win_len_for_distance = win_size
+        args.lambda_distance = lambda_num
         for case in combinations_cases:
             model_to_load = []
             picked_animals = case.split('_') # you have vs in the middle
@@ -101,8 +99,10 @@ if __name__ == '__main__':
             # if we also train
             if is_only_distance:
                 cfg.data_case = case + '_only_distance'
+                output_path = '/mnt/storage/datasets/hila_cohen_DTI/outputs/distances_logs'
             else:
                 cfg.data_case = case + '_with_distance'
+                output_path = checkpoints_path
             
             if args.evaluate or args.test or args.docker or is_only_distance:
                 cfg.update({
@@ -116,7 +116,7 @@ if __name__ == '__main__':
             # store files day by day
             curr_time = datetime.datetime.now().strftime("%y%m%d%H%M%S")
 
-            cfg.save_root = Path('/mnt/storage/datasets/hila_cohen_DTI/outputs/checkpoints') / curr_time[:6] / (curr_time[6:] + f'_{cfg.data_case}' + f'_{cfg.how_many_points_for_dist}_points' + f'_{cfg.lambda_distance}_lambda' + f'_{cfg.win_len_for_distance}_distance_win_len')
+            cfg.save_root = Path(output_path) / curr_time[:6] / (curr_time[6:] + f'_{cfg.data_case}' + f'_{cfg.how_many_points_for_dist}_points' + f'_{cfg.lambda_distance}_lambda' + f'_{cfg.win_len_for_distance}_distance_win_len')
 
             if args.docker:
                 cfg.save_root = Path('docker_submission')

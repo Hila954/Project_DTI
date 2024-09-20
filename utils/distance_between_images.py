@@ -66,10 +66,11 @@ def compute_distances_array(img1, img2, flow12, points_img1, vox_dim1, vox_dim2,
 
         #~ PART THREE - get graph for the whole img2 and calculate the dijikstra 
 
-        shortest_path_subimage2 = dijkstra(final_connectivity_graph_2, indices=int(desired_indices_img2_node.item()))
+        shortest_path_subimage2 = dijkstra(final_connectivity_graph_2, indices=[int(desired_indices_img2_node.item())])
         
-        matching_shortest_path = shortest_path_subimage2[matching_nodes_for_cropped] # duplicate values if needed 
-        sum_distance += np.mean((shortest_path_subimage1 - matching_shortest_path) ** 2) 
+        matching_shortest_path = shortest_path_subimage2[0, matching_nodes_for_cropped].reshape((1, -1)) # duplicate values if needed 
+        #! we add sqrt to each vector because we use dl^2 in the connectivity matrix
+        sum_distance += np.sqrt(np.mean((shortest_path_subimage1 - matching_shortest_path) ** 2))
     print("--- %s seconds ---" % (time.time() - start_time))
 
     return sum_distance/len(points_img1)
@@ -120,8 +121,8 @@ def create_DTI_connectivity_graph(image, lambda_value, optional_mask=None, vox_d
     #compute graph for the image, such that it statisfies dl^2 = dx^2+dy^2+dz^2+lamda*(dI1^2+....dI6^2) 
     for ch in range(image.shape[0]):
         connectivity_graph_ch = img_to_graph(image[ch], mask=optional_mask) # the weights are the gradients 
-        connectivity_graph_ch.data = connectivity_graph_ch.data ** 2
-        Intensity_connectivity_graph = lambda_value*np.add(Intensity_connectivity_graph, connectivity_graph_ch)
+        connectivity_graph_ch.data = lambda_value*(connectivity_graph_ch.data ** 2)
+        Intensity_connectivity_graph = np.add(Intensity_connectivity_graph, connectivity_graph_ch)
     
     #! to consider the vox dim of the images we want that each step in some direction will preset dx/dy/dz accordingly 
     image_of_dxdydz = mesh_grid_scale_fix(image.shape[1], image.shape[2], image.shape[3], vox_dim)
@@ -140,7 +141,7 @@ def create_DTI_connectivity_graph(image, lambda_value, optional_mask=None, vox_d
     # final_connectivity_graph = final_connectivity_graph_gpu.get()
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     final_connectivity_graph.setdiag(0)
-    return final_connectivity_graph
+    return np.sqrt(final_connectivity_graph)
 
 def from_index_to_graph_node(index, nodes_matrix):
     return nodes_matrix[index[0], index[1], index[2]]
