@@ -601,7 +601,7 @@ class TrainFramework(BaseTrainer):
                 #! MSE
                 MSE = torch.mean((pred_flows[:, :, :, GT_shift_value:] - GT_for_pixel_shift[:, :, :, GT_shift_value:]) ** 2) 
                 self.summary_writer.add_scalar('Validation_MSE', MSE, self.i_epoch)
-
+                #! I think that for the back wrapping there are different occluded pixels so we should discard a different area, the code here is not accurate  
                 MSE_bk = torch.mean((pred_flows_bk[:, :, :, GT_shift_value:] - GT_for_pixel_shift_bk[:, :, :, GT_shift_value:]) ** 2) 
                 self.summary_writer.add_scalar('Validation_MSE_bk', MSE_bk, self.i_epoch)
 
