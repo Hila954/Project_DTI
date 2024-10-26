@@ -27,7 +27,7 @@ This project explores the use of Diffusion Tensor Imaging (DTI) scans to estimat
    This will loop over the possible pairs and train the model. In practice we do not train from scratch but rather use a basic model to start from (load it in the -l argument). 
    * *Use a trained model that exists in your folders for distance estimation:*
    ```bash
-   python main_train.py --distance
+   python main_train.py -c=$USER/your_configuration_path -l=$USER/model_to_load_path --distance
    ```
 This will prioritize distance calculation over model training. If a pre-trained model for a specific animal pair exists, it will be used. Otherwise, a new model will be trained.
 ## Further Notes:
