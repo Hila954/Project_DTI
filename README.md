@@ -19,20 +19,20 @@ This project explores the use of Diffusion Tensor Imaging (DTI) scans to estimat
 ## Running the Project:
 
 1. **Install dependencies:** A requirements.txt is included. This project was developed on Ubuntu 18.04.6 LTS, but this os is not strictly necessary
-2. **Train the model for a new animal pair:**
+2. **Now you have two options:**
+   * *Train the model for a new animal pair:*
    ```bash
    python main_train.py -c=$USER/your_configuration_path -l=$USER/model_to_load_path
    ```
    This will loop over the possible pairs and train the model. In practice we do not train from scratch but rather use a basic model to start from (load it in the -l argument). 
-3. **Use a trained model that exists in your folders for distance estimation:**
+   * *Use a trained model that exists in your folders for distance estimation:*
    ```bash
    python main_train.py --distance
    ```
-   This will focus on the distance rather than the training, in other words, if a model for this pair already exists in your folders, it will be used. if not, there will be an automatic training.
-
+This will prioritize distance calculation over model training. If a pre-trained model for a specific animal pair exists, it will be used. Otherwise, a new model will be trained.
 ## Further Notes:
 
-* The distance is inspired from the gromov hausdroff distance.
+* The distance is inspired from the gromov hausdorff distance.
 * You can set your own parameters for the distance (number of anchor point for example) using the script arguments.
 
 
